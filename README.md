@@ -18,11 +18,15 @@ Click Add All to quickly create channels for all lights in the current scene.
 
 Operators, from left to right, are:
 
-  Show/hide the light in the viewport
-  Show/hide the light in the render
-  Light power/energy
-  Light color
-  Delete channel
+1. Show/hide the light in the viewport
+
+2. Show/hide the light in the render
+
+3. Light power/energy
+
+4. Light color
+
+5. Delete channel
 
 Channel panels may be reordered by drag-drop and collapsed when necessary. Clicking a channel's  Delete button will not delete the associated light object, only remove the channel.
 
