@@ -23,7 +23,7 @@ bl_info = {
     "description": "Control scene lights from a lighting desk panel",
     "author": "Quentin Walker",
     "blender": (2, 80, 0),
-    "version": (0, 1, 1),
+    "version": (0, 1, 2),
     "category": "Lighting",
     "location": "",
     "warning": "",
@@ -51,6 +51,7 @@ from bpy.types import (Panel,
 from bpy.utils import (register_class,
                        unregister_class,
                        )
+from uuid import uuid4
 import logging
 
 logging.basicConfig(level = logging.DEBUG)
@@ -69,9 +70,9 @@ def debug_dump():
         logging.debug(f"- {light.object.name}")
     logging.debug(f"{lightdesk.selected_name} ({lightdesk.selected_index}) selected")
     logging.debug("..............................")
-    logging.debug(f"{len(lightdesk.channels)} Channels:")
+    logging.debug(f"{len(lightdesk.channels)} Channels (light:panel):")
     for channel in bpy.context.scene.lightdesk.channels:
-        logging.debug(f"- {channel.name} : {channel.object.name}")
+        logging.debug(f"- {channel.object.name}:{channel.panel_class}")
     logging.debug("..............................")
     logging.debug(f"{len(classes)} Registered classes:")
     for cls in classes:
@@ -130,10 +131,30 @@ def add_light_to_collection(light):
 
 
 def update_selection_tracker(self, context):
-    logging.debug("Light selected, updating selection tracker...")
     lightdesk = bpy.context.scene.lightdesk
     if lightdesk.selected_index > -1 and lightdesk.selected_index <= len(lightdesk.lights):
         lightdesk.selected_name = lightdesk.lights[lightdesk.selected_index].name
+        logging.debug(f"{lightdesk.selected_name} selected")
+
+
+def register_panel_class():
+    pass
+
+
+def unregister_panel_class(class_name):
+    # unregister specified panel class
+    if class_name:
+        logging.debug(f"Unregistering panel class '{class_name}'...")
+        try:
+            class_id = f"bpy.types.{class_name}"
+            logging.debug(f" ({class_id})")
+            cls = eval(class_id)
+            unregister_class(cls)
+        except Exception as e:
+            logging.error(f"! Could not unregister {class_id}")
+            logging.error(e)
+    else:
+        logging.error(f"! unregister_panel_class: Invalid class_name '{class_name}'")
 
 
 #===============================================================================
@@ -189,18 +210,15 @@ class LIGHTDESK_OT_add_selected_light(Operator):
         lightdesk = scene.lightdesk
 
         logging.debug(f"Adding {lightdesk.selected_name} to new channel...")
+        class_id = f"LIGHTDESK_PT_{str(uuid4().int)}"
         channel = lightdesk.channels.add()
-        channel.name = f"LIGHTDESK_PT_{lightdesk.selected_name}"
         channel.object = bpy.data.objects[lightdesk.selected_name]
-
-        logging.debug(f"Creating panel class {channel.name}...")
-        panel = type(channel.name,
+        channel.panel_class = class_id
+        logging.debug(f"Creating panel class {class_id}...")
+        panel = type(class_id,
                      (LIGHTDESK_PT_channel, Panel, ),
-                     {"bl_idname" : channel.name,
-                      "bl_label" : lightdesk.selected_name,
-                      }
+                     {"bl_idname" : class_id,}
                      )
-        classes.append(panel)
         register_class(panel)
 
         return {'FINISHED'}
@@ -253,18 +271,18 @@ class LIGHTDESK_OT_delete_all_channels(Operator):
         return bool(lightdesk and len(lightdesk.channels) > 0)
 
     def execute(self, context):
-        scene = context.scene
-        lightdesk = scene.lightdesk
-
-        logging.debug(f"Unregistering {len(lightdesk.channels)} panel classes:")
-        for channel in lightdesk.channels:
-            classname = f"bpy.types.{channel.name}"
-            logging.debug(f"- {classname}")
-            unregister_class(eval(classname))
+        lightdesk = bpy.context.scene.lightdesk
+        if len(lightdesk.channels):
+            logging.debug(f"Unregistering {len(lightdesk.channels)} panel classes:")
+            for channel in lightdesk.channels:
+                if channel.panel_class:
+                    unregister_panel_class(channel.panel_class)
+                else:
+                    logging.warning(f"! Channel {channel.object.name} has no panel_class, skipping")
+        else:
+            logging.debug("No panel classes registered")
         logging.debug(f"Clearing {len(lightdesk.channels)} channels...")
         lightdesk.channels.clear()
-        logging.debug(f"- {len(lightdesk.channels)} channels")
-
         debug_dump()
         return {'FINISHED'}
 
@@ -333,24 +351,33 @@ class LIGHTDESK_PT_channel(Panel):
     bl_category = 'Lightdesk'
     bl_context = 'objectmode'
     bl_idname = "LIGHTDESK_PT_channel"
-    bl_label = "channel"
+    bl_label = ""
+
+    def draw_header(self, context):
+        lightdesk = context.scene.lightdesk
+        layout = self.layout
+        row = layout.row()
+        split = row.split()
+        split.prop(lightdesk.channels[0].object, "name", text = "")
+        split = row.split()
+        split.operator("lightdesk.delete_channel", icon = 'X', text = "")
+
 
     def draw(self, context):
-        scene = context.scene
-        lightdesk = scene.lightdesk
+        lightdesk = context.scene.lightdesk
         layout = self.layout
 
-        if len(lightdesk.channels) > 0:
+        # TODO update controls for specific light/channel rather than index [0]
+        if len(lightdesk.channels):
             row = layout.row()
-            row = row.split(factor = 0.25, align = True)
-            # TODO update controls below for specific light/channel rather than index [0]
-            row.prop(lightdesk.channels[0].object, "hide_viewport", text = "")
-            row.prop(lightdesk.channels[0].object, "hide_render", text = "")
-            row = row.split(factor = 0.7, align = True)
-            row.prop(lightdesk.channels[0].object.data, "energy", text = "")
-            row.prop(lightdesk.channels[0].object.data, "color", text = "")
-            row = row.split(factor = 1.0)
-            row.operator("lightdesk.delete_channel", text="", icon = 'X')
+            split = row.split(factor = 0.4, align = True)
+            split.prop(lightdesk.channels[0].object, "hide_viewport", icon_only = True, emboss = False)
+            split.prop(lightdesk.channels[0].object, "hide_render", icon_only = True, emboss = False)
+            split = row.split()
+            split = split.split(factor = 0.8)
+            split.prop(lightdesk.channels[0].object.data, "energy", text = "")
+            split = split.split()
+            split.prop(lightdesk.channels[0].object.data, "color", text = "")
 
 
 #===============================================================================
@@ -362,7 +389,7 @@ class LIGHTDESK_PG_light(PropertyGroup):
     object : PointerProperty(type = bpy.types.Object)
 
 class LIGHTDESK_PG_channel(PropertyGroup):
-    name : StringProperty()
+    panel_class : StringProperty()
     object : PointerProperty(type = bpy.types.Object)
 
 class LIGHTDESK_PG_properties(PropertyGroup):
@@ -382,28 +409,58 @@ class LIGHTDESK_PG_properties(PropertyGroup):
 
 
 classes = [
-    LIGHTDESK_PG_light,
-    LIGHTDESK_PG_channel,
-    LIGHTDESK_PG_properties,
-    LIGHTDESK_OT_debug_dump,
-    LIGHTDESK_OT_collate_scene_lights,
-    LIGHTDESK_OT_add_selected_light,
-    LIGHTDESK_OT_add_all_lights,
-    LIGHTDESK_OT_delete_channel,
-    LIGHTDESK_OT_delete_all_channels,
-    LIGHTDESK_UL_lights,
-    LIGHTDESK_PT_lights,
-    ]
+           # Operators
+           LIGHTDESK_OT_debug_dump,
+           LIGHTDESK_OT_collate_scene_lights,
+           LIGHTDESK_OT_add_selected_light,
+           LIGHTDESK_OT_add_all_lights,
+           LIGHTDESK_OT_delete_channel,
+           LIGHTDESK_OT_delete_all_channels,
+           # ui elelements
+           LIGHTDESK_UL_lights,
+           LIGHTDESK_PT_lights,
+           # property groups
+           LIGHTDESK_PG_light,
+           LIGHTDESK_PG_channel,
+           LIGHTDESK_PG_properties,
+           ]
 
 
 def register():
+    # register main classes
+    logging.debug(f"Registering {len(classes)} main classes...")
     for cls in classes:
-        logging.debug("registering {}".format(cls))
+        logging.debug(f"- {cls}")
         register_class(cls)
+    # instantiate lightdesk properties
     bpy.types.Scene.lightdesk = PointerProperty(type = LIGHTDESK_PG_properties)
 
+
 def unregister():
+    # unregister any channel panel classes
+    lightdesk = bpy.context.scene.lightdesk
+    if len(lightdesk.channels):
+        logging.debug(f"Unregistering {len(lightdesk.channels)} panel classes:")
+        for channel in lightdesk.channels:
+            if channel.panel_class:
+                unregister_panel_class(channel.panel_class)
+            else:
+                logging.warning(f"! Channel {channel.object.name} has no panel_class, skipping")
+    else:
+        logging.debug("No panel classes registered")
+    # clear collections
+    # TODO remove and add panel creation from saved data upon load
+    lightdesk.channels.clear()
+    lightdesk.lights.clear()
+    # unregister all main classes
+    logging.debug(f"Unregistering {len(classes)} classes:")
     for cls in reversed(classes):
-        logging.debug("unregistering {}".format(cls))
-        unregister_class(cls)
+        logging.debug(f"- {cls}")
+        try:
+            unregister_class(cls)
+        except E:
+            logging.error(f"! Could not unregister {class_id}")
+            logging.error(E)
+            pass
+    # remove lightdesk properties
     del bpy.types.Scene.lightdesk
