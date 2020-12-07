@@ -7,16 +7,16 @@ Add lights from the current scene to lighting channels on the 'desk'. Control th
 
 Select the Lightdesk tab in the 3D view sidebar ('N') to display the Scene Lights panel.
 
-{insert panel image}
+![Light selection](lights.png)
 
 This panel will list all the light objects in the current scene. The buttons above may be used to filter the list by light types.
 
 Select a light from the list and click Add Selected to create a new lighting channel and assign the selected light to it.
-Click Add All to quickly create channels for all lights in the current scene.
+Click Add All to quickly create channels for all the lights in the current scene. Channel panels can be drag=dropped to reorder and collapsed when additional screen space is required.
 
-{insert channel image}
+![Light selection](channels)
 
-Operators, from left to right, are:
+Channel operators are, from left to right, are:
 
 1. Show/hide the light in the viewport
 
@@ -26,8 +26,7 @@ Operators, from left to right, are:
 
 4. Light color
 
-5. Delete channel
-
-Channel panels may be reordered by drag-drop and collapsed when necessary. Clicking a channel's  Delete button will not delete the associated light object, only remove the channel.
+The channel header contains the name of the light object, which can be renamed if desired, and a Delete Channel button.
+Note that clicking the Delete Channel button will not delete the associated light object, only remove the channel from Lightdesk.
 
 Lightdesk channels and settings are configured per scene and are saved with the .blend file, so your channel setup will be recreated next time you load your project.

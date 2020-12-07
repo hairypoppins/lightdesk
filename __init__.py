@@ -327,10 +327,6 @@ class LIGHTDESK_PT_lights(Panel):
     def draw(self, context):
         lightdesk = context.scene.lightdesk
         layout = self.layout
-
-        row = layout.row()
-        row.operator("lightdesk.debug_dump", text="Dump Debug")
-
         if logging.getLevelName(logging.root.level) == 'DEBUG':
             row = layout.row()
             row.operator("lightdesk.debug_dump", text="Dump Debug")
@@ -377,17 +373,15 @@ class LIGHTDESK_PT_channel(Panel):
     def draw(self, context):
         lightdesk = context.scene.lightdesk
         layout = self.layout
-
-        if len(lightdesk.channels):
-            row = layout.row()
-            split = row.split(factor = 0.4, align = True)
-            split.prop(lightdesk.channels[self.bl_idname].object, "hide_viewport", icon_only = True, emboss = False)
-            split.prop(lightdesk.channels[self.bl_idname].object, "hide_render", icon_only = True, emboss = False)
-            split = row.split()
-            split = split.split(factor = 0.8)
-            split.prop(lightdesk.channels[self.bl_idname].object.data, "energy", text = "")
-            split = split.split()
-            split.prop(lightdesk.channels[self.bl_idname].object.data, "color", text = "")
+        row = layout.row()
+        split = row.split(factor = 0.4, align = True)
+        split.prop(lightdesk.channels[self.bl_idname].object, "hide_viewport", icon_only = True, emboss = False)
+        split.prop(lightdesk.channels[self.bl_idname].object, "hide_render", icon_only = True, emboss = False)
+        split = row.split()
+        split = split.split(factor = 0.8)
+        split.prop(lightdesk.channels[self.bl_idname].object.data, "energy", text = "")
+        split = split.split()
+        split.prop(lightdesk.channels[self.bl_idname].object.data, "color", text = "")
 
 
 #===============================================================================
