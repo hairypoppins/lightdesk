@@ -81,10 +81,18 @@ def debug_dump():
     return{'FINSHED'}
 
 
-def collate_scene_lights(self, context):
+def add_light_to_collection(light):
+    logging.debug(f"- adding {light.name} to collection")
+    lightdesk = bpy.context.scene.lightdesk
+    new_item = lightdesk.lights.add()
+    new_item.name = light.name
+    new_item.object = light
+    return{'FINISHED'}
+
+
+def collate_scene_lights():
     logging.debug("Collating scene lights...")
-    scene = bpy.context.scene
-    lightdesk = scene.lightdesk
+    lightdesk = bpy.context.scene.lightdesk
     # clear current scene_lights collection
     if len(lightdesk.lights):
         logging.debug("- clearing existing collection...")
@@ -118,15 +126,6 @@ def collate_scene_lights(self, context):
             logging.debug(f"- {lightdesk.selected_name} not found in collection, trackers reset")
             lightdesk.selected_index = -1
             lightdesk.selected_name = ""
-
-
-def add_light_to_collection(light):
-    logging.debug(f"- adding {light.name} to collection")
-    lightdesk = bpy.context.scene.lightdesk
-    new_item = lightdesk.lights.add()
-    new_item.name = light.name
-    new_item.object = light
-    return{'FINISHED'}
 
 
 def update_selection_tracker(self, context):
@@ -169,11 +168,9 @@ def create_channel():
         channel = lightdesk.channels.add()
         channel.object = bpy.data.objects[lightdesk.selected_name]
         channel.panel_class = register_panel_class()
-        return {'FINISHED'}
     except Exception as e:
         logging.error(f"! create_channel: {lightdesk.selected_name} ({channel.panel_class})")
         logging.error(e)
-        return {'ERROR'}
 
 
 #===============================================================================
@@ -218,11 +215,14 @@ class LIGHTDESK_OT_add_selected_light(Operator):
 
     @classmethod
     def poll(cls, context):
-        # TODO check existing channels to see if selected light already added?
         lightdesk = context.scene.lightdesk
-        return bool(lightdesk
-                    and lightdesk.selected_index > -1
-                    and lightdesk.channels.find(lightdesk.selected_name) < 0)
+        if lightdesk.selected_name:
+            for channel in lightdesk.channels:
+                if channel.object.name == lightdesk.selected_name:
+                    logging.debug(f"{lightdesk.selected_name} channel found ({channel.panel_class})")
+                    return False
+            return True
+        return False
 
     def execute(self, context):
         lightdesk = context.scene.lightdesk
@@ -257,12 +257,11 @@ class LIGHTDESK_OT_delete_channel(Operator):
         return bool(context.scene.lightdesk)
 
     def execute(self, context):
-        scene = context.scene
-        lightdesk = scene.lightdesk
+        lightdesk = context.scene.lightdesk
         # TODO unregister(channel panel)
-        logging.debug("Deleting channel {???}...")
+        logging.debug(f"Deleting channel {self}...")
         # TODO remove from lightdesk.channels
-        debug_dump()
+        #debug_dump()
         return {'FINISHED'}
 
 
