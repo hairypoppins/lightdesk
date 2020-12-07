@@ -64,7 +64,7 @@ logging.basicConfig(level = logging.DEBUG)
 
 def debug_dump():
     lightdesk = bpy.context.scene.lightdesk
-    logging.debug("==================================================")
+    logging.debug("--------------------------------------------------")
     logging.debug(f"{len(lightdesk.lights)} Scene lights:")
     for light in bpy.context.scene.lightdesk.lights:
         logging.debug(f"- {light.object.name}")
@@ -86,13 +86,12 @@ def collate_scene_lights(self, context):
     scene = bpy.context.scene
     lightdesk = scene.lightdesk
     # clear current scene_lights collection
-    logging.debug("- clearing existing collection...")
-    if len(lightdesk.lights) > 0:
+    if len(lightdesk.lights):
+        logging.debug("- clearing existing collection...")
         bpy.context.scene.lightdesk.lights.clear()
     # find all light objects in scene
     lights = [object for object in scene.objects if object.type == 'LIGHT']
     # check found lights against current type filters, add to scene_lights accordingly
-    logging.debug("- adding found lights to collection...")
     for light in lights:
         if light.data.type == 'AREA':
             if lightdesk.show_area:
@@ -138,7 +137,15 @@ def update_selection_tracker(self, context):
 
 
 def register_panel_class():
-    pass
+    class_id = f"LIGHTDESK_PT_{str(uuid4().hex)}"
+    logging.debug(f"Registering panel class {class_id}...")
+    panel = type(class_id, (LIGHTDESK_PT_channel, Panel, ), {"bl_idname" : class_id,})
+    try:
+        register_class(panel)
+        return class_id
+    except Exception as e:
+        logging.error(f"! register_panel_class: {class_id}")
+        logging.error(e)
 
 
 def unregister_panel_class(class_name):
@@ -147,14 +154,26 @@ def unregister_panel_class(class_name):
         logging.debug(f"Unregistering panel class '{class_name}'...")
         try:
             class_id = f"bpy.types.{class_name}"
-            logging.debug(f" ({class_id})")
             cls = eval(class_id)
             unregister_class(cls)
         except Exception as e:
-            logging.error(f"! Could not unregister {class_id}")
+            logging.error(f"! unregister_panel_class: {class_id}")
             logging.error(e)
     else:
         logging.error(f"! unregister_panel_class: Invalid class_name '{class_name}'")
+
+
+def create_channel():
+    lightdesk = bpy.context.scene.lightdesk
+    try:
+        channel = lightdesk.channels.add()
+        channel.object = bpy.data.objects[lightdesk.selected_name]
+        channel.panel_class = register_panel_class()
+        return {'FINISHED'}
+    except Exception as e:
+        logging.error(f"! create_channel: {lightdesk.selected_name} ({channel.panel_class})")
+        logging.error(e)
+        return {'ERROR'}
 
 
 #===============================================================================
@@ -206,21 +225,9 @@ class LIGHTDESK_OT_add_selected_light(Operator):
                     and lightdesk.channels.find(lightdesk.selected_name) < 0)
 
     def execute(self, context):
-        scene = context.scene
-        lightdesk = scene.lightdesk
-
+        lightdesk = context.scene.lightdesk
         logging.debug(f"Adding {lightdesk.selected_name} to new channel...")
-        class_id = f"LIGHTDESK_PT_{str(uuid4().int)}"
-        channel = lightdesk.channels.add()
-        channel.object = bpy.data.objects[lightdesk.selected_name]
-        channel.panel_class = class_id
-        logging.debug(f"Creating panel class {class_id}...")
-        panel = type(class_id,
-                     (LIGHTDESK_PT_channel, Panel, ),
-                     {"bl_idname" : class_id,}
-                     )
-        register_class(panel)
-
+        create_channel()
         return {'FINISHED'}
 
 
@@ -268,7 +275,7 @@ class LIGHTDESK_OT_delete_all_channels(Operator):
     @classmethod
     def poll(cls, context):
         lightdesk = context.scene.lightdesk
-        return bool(lightdesk and len(lightdesk.channels) > 0)
+        return bool(lightdesk and len(lightdesk.channels))
 
     def execute(self, context):
         lightdesk = bpy.context.scene.lightdesk
@@ -428,6 +435,8 @@ classes = [
 
 def register():
     # register main classes
+    logging.debug("--------------------------------------------------")
+    logging.debug("Activated, registering components...")
     logging.debug(f"Registering {len(classes)} main classes...")
     for cls in classes:
         logging.debug(f"- {cls}")
@@ -438,9 +447,11 @@ def register():
 
 def unregister():
     # unregister any channel panel classes
+    logging.debug("--------------------------------------------------")
+    logging.debug("Deactivated, unregistering components...")
     lightdesk = bpy.context.scene.lightdesk
     if len(lightdesk.channels):
-        logging.debug(f"Unregistering {len(lightdesk.channels)} panel classes:")
+        logging.debug(f"{len(lightdesk.channels)} panel classes:")
         for channel in lightdesk.channels:
             if channel.panel_class:
                 unregister_panel_class(channel.panel_class)
@@ -449,18 +460,18 @@ def unregister():
     else:
         logging.debug("No panel classes registered")
     # clear collections
-    # TODO remove and add panel creation from saved data upon load
+    # TODO remove these and add panel creation from saved data upon load
     lightdesk.channels.clear()
     lightdesk.lights.clear()
     # unregister all main classes
-    logging.debug(f"Unregistering {len(classes)} classes:")
+    logging.debug(f"{len(classes)} main classes:")
     for cls in reversed(classes):
         logging.debug(f"- {cls}")
         try:
             unregister_class(cls)
-        except E:
+        except Exception as e:
             logging.error(f"! Could not unregister {class_id}")
-            logging.error(E)
+            logging.error(e)
             pass
     # remove lightdesk properties
     del bpy.types.Scene.lightdesk
