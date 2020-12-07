@@ -3,20 +3,22 @@
 An add-on for Blender 2.8+
 
 Lightdesk provides a lighting control panel in the sidebar of the 3D view.
-Add lights from the current scene to lighting channels on the 'desk'. Control the visibility, power, and color of multiple lights from this desk. Tweak your scene lighting without having to hunt/click individual lights in the 3D/Outliner views and selecting their light properties tab.
+Add lights from the current scene to lighting channels on the desk. Control the visibility, power, and color of multiple lights from this one location. Tweak your scene lighting without having to hunt/click individual lights in the 3D/Outliner views and selecting their light properties tab.
 
 Select the Lightdesk tab in the 3D view sidebar ('N') to display the Scene Lights panel.
 
 ![Light selection](lights.png)
 
-This panel will list all the light objects in the current scene. The buttons above may be used to filter the list by light types.
+This core panel lists all the light objects in the current scene. The buttons above may be used to filter the list by various light types, helpful if you have a large number of lights in the scene. Standard search and filter by name options are available from the drop-down at the foot of the list.
 
 Select a light from the list and click Add Selected to create a new lighting channel and assign the selected light to it.
-Click Add All to quickly create channels for all the lights in the current scene. Channel panels can be drag=dropped to reorder and collapsed when additional screen space is required.
+Click Add All to quickly create channels for all the lights in the current scene. Channel panels can be drag-dropped to reorder and collapsed when additional screen space is required.
 
-![Light selection](channels)
+![Light selection](channels.png)
 
-Channel operators are, from left to right, are:
+The channel header contains the name of the related light object, which can be renamed from here, and a Delete Channel button. Note that clicking the Delete Channel button will not delete the associated light object, but instead only remove the channel from Lightdesk.
+
+Operators within each channel panel are, from left to right:
 
 1. Show/hide the light in the viewport
 
@@ -26,7 +28,5 @@ Channel operators are, from left to right, are:
 
 4. Light color
 
-The channel header contains the name of the light object, which can be renamed if desired, and a Delete Channel button.
-Note that clicking the Delete Channel button will not delete the associated light object, only remove the channel from Lightdesk.
 
 Lightdesk channels and settings are configured per scene and are saved with the .blend file, so your channel setup will be recreated next time you load your project.
