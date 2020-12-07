@@ -66,17 +66,12 @@ def debug_dump():
     lightdesk = bpy.context.scene.lightdesk
     logging.debug("--------------------------------------------------")
     logging.debug(f"{len(lightdesk.lights)} Scene lights:")
-    for light in bpy.context.scene.lightdesk.lights:
-        logging.debug(f"- {light.object.name}")
-    logging.debug(f"{lightdesk.selected_name} ({lightdesk.selected_index}) selected")
+    logging.debug(f"- {lightdesk.lights.keys()}")
+    logging.debug(f"- {lightdesk.selected_name} ({lightdesk.selected_index}) selected")
     logging.debug("..............................")
     logging.debug(f"{len(lightdesk.channels)} Channels:")
     for channel in bpy.context.scene.lightdesk.channels:
         logging.debug(f"- {channel.object.name} {channel.name}")
-    logging.debug("..............................")
-    logging.debug(f"{len(classes)} Registered classes:")
-    for cls in classes:
-        logging.debug(f"- {cls}")
     logging.debug("--------------------------------------------------")
     return{'FINSHED'}
 
@@ -257,7 +252,6 @@ class LIGHTDESK_OT_add_all_lights(Operator):
     def execute(self, context):
         scene = context.scene
         lightdesk = scene.lightdesk
-        debug_dump()
         return {'FINISHED'}
 
 
@@ -294,16 +288,14 @@ class LIGHTDESK_OT_delete_all_channels(Operator):
     def execute(self, context):
         lightdesk = bpy.context.scene.lightdesk
         if len(lightdesk.channels):
-            logging.debug(f"Unregistering {len(lightdesk.channels)} panel classes:")
+            logging.debug(f"Deleting {len(lightdesk.channels)} channels:")
             for channel in lightdesk.channels:
                 if channel.name:
-                    unregister_panel_class(channel.name)
+                    delete_channel(channel.name)
                 else:
-                    logging.warning(f"! Channel {channel.object.name} has no panel_class, skipping")
+                    logging.error(f"! Missing channel name: {channel}")
         else:
-            logging.debug("No panel classes registered")
-        logging.debug(f"Clearing {len(lightdesk.channels)} channels...")
-        lightdesk.channels.clear()
+            logging.debug("No channels registered")
         debug_dump()
         return {'FINISHED'}
 
@@ -339,15 +331,16 @@ class LIGHTDESK_PT_lights(Panel):
         row = layout.row()
         row.operator("lightdesk.debug_dump", text="Dump Debug")
 
+        if logging.getLevelName(logging.root.level) == 'DEBUG':
+            row = layout.row()
+            row.operator("lightdesk.debug_dump", text="Dump Debug")
         row = layout.row(align = True)
         row.prop(lightdesk, "show_area", toggle = True, text = "Area" )
         row.prop(lightdesk, "show_point", toggle = True, text = "Point")
         row.prop(lightdesk, "show_spot", toggle = True, text = "Spot")
         row.prop(lightdesk, "show_sun", toggle = True, text = "Sun")
-
         row = layout.row()
         row.template_list("LIGHTDESK_UL_lights", "", lightdesk, "lights", lightdesk, "selected_index", rows = 2, maxrows = 5, type = 'DEFAULT')
-
         # check selected light name matches name of object at selected index, if not fix/reset
         if lightdesk.selected_index > -1 and lightdesk.selected_index < len(lightdesk.lights):
             try:
@@ -356,8 +349,6 @@ class LIGHTDESK_PT_lights(Panel):
             except IndexError:
                 lightdesk.selected_index = -1
                 lightdesk.selected_name = ""
-
-
         row = layout.row()
         row.operator("lightdesk.add_selected_light", text="Add Selected", emboss = lightdesk.selected_index > -1)
         row.operator("lightdesk.add_all_lights", text="Add All")
@@ -378,7 +369,7 @@ class LIGHTDESK_PT_channel(Panel):
         layout = self.layout
         row = layout.row()
         split = row.split()
-        split.prop(lightdesk.channels[0].object, "name", text = "")
+        split.prop(lightdesk.channels[self.bl_idname].object, "name", text = "")
         split = row.split()
         op = split.operator("lightdesk.delete_channel", icon = 'X', text = "")
         op.channel_name = str(self.bl_idname)
@@ -387,17 +378,16 @@ class LIGHTDESK_PT_channel(Panel):
         lightdesk = context.scene.lightdesk
         layout = self.layout
 
-        # TODO update controls for specific light/channel rather than index [0]
         if len(lightdesk.channels):
             row = layout.row()
             split = row.split(factor = 0.4, align = True)
-            split.prop(lightdesk.channels[0].object, "hide_viewport", icon_only = True, emboss = False)
-            split.prop(lightdesk.channels[0].object, "hide_render", icon_only = True, emboss = False)
+            split.prop(lightdesk.channels[self.bl_idname].object, "hide_viewport", icon_only = True, emboss = False)
+            split.prop(lightdesk.channels[self.bl_idname].object, "hide_render", icon_only = True, emboss = False)
             split = row.split()
             split = split.split(factor = 0.8)
-            split.prop(lightdesk.channels[0].object.data, "energy", text = "")
+            split.prop(lightdesk.channels[self.bl_idname].object.data, "energy", text = "")
             split = split.split()
-            split.prop(lightdesk.channels[0].object.data, "color", text = "")
+            split.prop(lightdesk.channels[self.bl_idname].object.data, "color", text = "")
 
 
 #===============================================================================
