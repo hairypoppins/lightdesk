@@ -9,14 +9,14 @@ Select the Lightdesk tab in the 3D view sidebar ('N') to display the Scene Light
 
 ![Light selection](lights.png)
 
-This core panel lists all the light objects in the current scene. The buttons above may be used to filter the list by various light types, helpful if you have a large number of lights in the scene. Standard search and filter by name options are available from the drop-down at the foot of the list.
+This core panel lists all the light objects in the current scene. The buttons above may be used to filter the list by various light types, which can be helpful if you have a large number of lights in your scene. Standard filter and sort by name options are also available from the drop-down section at the foot of the list.
 
 Select a light from the list and click Add Selected to create a new lighting channel and assign the selected light to it.
-Click Add All to quickly create channels for all the lights in the current scene. Channel panels can be drag-dropped to reorder and collapsed when additional screen space is required.
+Optionally, click Add All to quickly create channels for all the lights in the current scene. Channel panels can be drag-dropped to reorder and collapsed when additional screen space is required.
 
 ![Light selection](channels.png)
 
-The channel header contains the name of the related light object, which can be renamed from here, and a Delete Channel button. Note that clicking the Delete Channel button will not delete the associated light object, but instead only remove the channel from Lightdesk.
+Each channel header contains the name of the related light object, which can be renamed from here if wanted, and a Delete Channel button. Note that clicking the Delete Channel button will not delete the associated light object, but only remove that channel from the Lightdesk view.
 
 Operators within each channel panel are, from left to right:
 
