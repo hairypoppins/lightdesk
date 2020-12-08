@@ -23,7 +23,7 @@ bl_info = {
     "description": "Control scene lights from a lighting desk panel",
     "author": "Quentin Walker",
     "blender": (2, 80, 0),
-    "version": (0, 1, 2),
+    "version": (0, 1, 3),
     "category": "Lighting",
     "location": "",
     "warning": "",
@@ -76,18 +76,18 @@ def debug_dump():
     return{'FINSHED'}
 
 
-def add_light_to_collection(light):
-    logging.debug(f"- adding {light.name} to collection")
+def add_light_to_collection(object):
+    logging.debug(f"- adding {object.name} to collection")
     lightdesk = bpy.context.scene.lightdesk
-    new_item = lightdesk.lights.add()
-    new_item.name = light.name
-    new_item.object = light
+    light = lightdesk.lights.add()
+    light.name = object.name
+    light.object = object
     return{'FINISHED'}
 
 
 def collate_scene_lights(self, context):
     logging.debug("Collating scene lights...")
-    scene = context.scene
+    scene = bpy.context.scene
     lightdesk = scene.lightdesk
     # clear current scene_lights collection
     if len(lightdesk.lights):
@@ -364,9 +364,11 @@ class LIGHTDESK_PT_channel(Panel):
         lightdesk = context.scene.lightdesk
         layout = self.layout
         row = layout.row()
-        split = row.split()
-        split.prop(lightdesk.channels[self.bl_idname].object, "name", text = "")
-        split = row.split()
+        split = row.split(factor = 0.15)
+        split.label(text = "", icon = f"LIGHT_{lightdesk.channels[self.bl_idname].object.data.type}")
+        split = split.split(factor = 0.85)
+        split.prop(lightdesk.channels[self.bl_idname].object, "name", text = "", emboss = False)
+        split = split.split()
         op = split.operator("lightdesk.delete_channel", icon = 'X', text = "")
         op.channel_name = str(self.bl_idname)
 
@@ -374,11 +376,10 @@ class LIGHTDESK_PT_channel(Panel):
         lightdesk = context.scene.lightdesk
         layout = self.layout
         row = layout.row()
-        split = row.split(factor = 0.4, align = True)
+        split = row.split(factor = 0.25, align = True)
         split.prop(lightdesk.channels[self.bl_idname].object, "hide_viewport", icon_only = True, emboss = False)
         split.prop(lightdesk.channels[self.bl_idname].object, "hide_render", icon_only = True, emboss = False)
-        split = row.split()
-        split = split.split(factor = 0.8)
+        split = row.split(factor = 0.85)
         split.prop(lightdesk.channels[self.bl_idname].object.data, "energy", text = "")
         split = split.split()
         split.prop(lightdesk.channels[self.bl_idname].object.data, "color", text = "")
@@ -397,10 +398,10 @@ class LIGHTDESK_PG_channel(PropertyGroup):
     object : PointerProperty(type = bpy.types.Object)
 
 class LIGHTDESK_PG_properties(PropertyGroup):
-    show_area : BoolProperty(default = True, update = collate_scene_lights)
-    show_point : BoolProperty(default = True, update = collate_scene_lights)
-    show_spot : BoolProperty(default = True, update = collate_scene_lights)
-    show_sun : BoolProperty(default = True, update = collate_scene_lights)
+    show_area : BoolProperty(default = False, update = collate_scene_lights)
+    show_point : BoolProperty(default = False, update = collate_scene_lights)
+    show_spot : BoolProperty(default = False, update = collate_scene_lights)
+    show_sun : BoolProperty(default = False, update = collate_scene_lights)
     lights : CollectionProperty(type = LIGHTDESK_PG_light)
     channels : CollectionProperty(type = LIGHTDESK_PG_channel)
     selected_index : IntProperty(default = -1, update = update_selection_tracker)
@@ -441,7 +442,6 @@ def register():
     # instantiate lightdesk properties
     bpy.types.Scene.lightdesk = PointerProperty(type = LIGHTDESK_PG_properties)
 
-
 def unregister():
     # unregister any channel panel classes
     logging.debug("--------------------------------------------------")
@@ -460,6 +460,10 @@ def unregister():
     # TODO remove these and add panel creation from saved data upon load
     lightdesk.channels.clear()
     lightdesk.lights.clear()
+    lightdesk.show_area = False
+    lightdesk.show_point = False
+    lightdesk.show_spot = False
+    lightdesk.show_sun = False
     # unregister all main classes
     logging.debug(f"{len(classes)} main classes:")
     for cls in reversed(classes):
