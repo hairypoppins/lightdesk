@@ -1,4 +1,3 @@
-'''
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -16,14 +15,13 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ##### END GPL LICENSE BLOCK #####
-'''
 
 bl_info = {
     "name": "Lightdesk",
     "description": "Control scene lights from a lighting desk panel",
     "author": "Quentin Walker",
     "blender": (2, 80, 0),
-    "version": (0, 1, 3),
+    "version": (0, 1, 4),
     "category": "Lighting",
     "location": "",
     "warning": "",
@@ -51,6 +49,7 @@ from bpy.types import (Panel,
 from bpy.utils import (register_class,
                        unregister_class,
                        )
+from bpy.app.handlers import persistent
 from uuid import uuid4
 import logging
 
@@ -62,15 +61,25 @@ light_types = ['AREA', 'POINT', 'SPOT', 'SUN']
 # Functions
 #===============================================================================
 
+@persistent
+def init(scene):
+    logging.debug("###########################################################")
+    logging.debug("LIGHTDESK INIT ############################################")
+    logging.debug("###########################################################")
+    bpy.app.handlers.load_post.remove(init)
+
+
 def output_debug():
     lightdesk = bpy.context.scene.lightdesk
     logging.debug("--------------------------------------------------")
     logging.debug(f"{len(lightdesk.lights)} Scene lights:")
     logging.debug(f"- {lightdesk.lights.keys()}")
     logging.debug("....................")
-    logging.debug(f"{len(lightdesk.filters)} filters:")
-    for filter in lightdesk.filters:
-        logging.debug(f"{filter.name} : {filter.include}")
+    logging.debug(f"Light filters:")
+    logging.debug(f"list_area : {lightdesk.list_area}")
+    logging.debug(f"list_point : {lightdesk.list_point}")
+    logging.debug(f"list_spot : {lightdesk.list_spot}")
+    logging.debug(f"list_sun : {lightdesk.list_sun}")
     logging.debug("....................")
     logging.debug(f"{len(lightdesk.filtered)} Filtered lights:")
     logging.debug(f"- {lightdesk.filtered.keys()}")
@@ -81,15 +90,6 @@ def output_debug():
         logging.debug(f"- {channel.name}, {channel.object.name}")
     logging.debug("--------------------------------------------------")
     return{'FINSHED'}
-
-
-def reset_filters():
-    logging.debug("Resetting filters...")
-    lightdesk = bpy.context.scene.lightdesk
-    lightdesk.filters.clear()
-    for light_type in light_types:
-        filter = lightdesk.filters.add()
-        filter.name = light_type
 
 
 def get_lights(self, context):
@@ -110,8 +110,18 @@ def filter_lights(self, context):
     lightdesk = context.scene.lightdesk
     lightdesk.filtered.clear()
     for light in lightdesk.lights:
-        if lightdesk.filters[light.object.data.type].include:
-            add_light_to_collection(light.object, lightdesk.filtered)
+        if light.object.data.type == 'AREA':
+            if lightdesk.list_area:
+                add_light_to_collection(light.object, lightdesk.filtered)
+        elif light.object.data.type == 'POINT':
+            if lightdesk.list_point:
+                add_light_to_collection(light.object, lightdesk.filtered)
+        elif light.object.data.type == 'SPOT':
+            if lightdesk.list_spot:
+                add_light_to_collection(light.object, lightdesk.filtered)
+        elif light.object.data.type == 'SUN':
+            if lightdesk.list_sun:
+                add_light_to_collection(light.object, lightdesk.filtered)
     validate_tracking()
 
 
@@ -242,7 +252,7 @@ class LIGHTDESK_OT_output_debug(Operator):
         return bool(context.scene.lightdesk)
 
     def execute(self, context):
-        print_debug()
+        output_debug()
         return{'FINISHED'}
 
 
@@ -272,7 +282,7 @@ class LIGHTDESK_OT_add_selected_light(Operator):
         return not context.scene.lightdesk.selected_channel
 
     def execute(self, context):
-        add_light_to_channel(context.scene.lightdesk.selceted_name)
+        add_light_to_channel(context.scene.lightdesk.selected_name)
         return {'FINISHED'}
 
 
@@ -349,12 +359,12 @@ class LIGHTDESK_PT_lights(Panel):
         if logging.getLevelName(logging.root.level) == 'DEBUG':
             row = layout.row()
             row.operator("lightdesk.get_lights", text="Get Lights")
-            row.operator("lightdesk.print_debug", text="Dump Debug")
+            row.operator("lightdesk.output_debug", text="Output Debug")
         row = layout.row(align = True)
-        row.prop(lightdesk.filters['AREA'], "include", toggle = True, text = "Area" )
-        row.prop(lightdesk.filters['POINT'], "include", toggle = True, text = "Point")
-        row.prop(lightdesk.filters['SPOT'], "include", toggle = True, text = "Spot")
-        row.prop(lightdesk.filters['SUN'], "include", toggle = True, text = "Sun")
+        row.prop(lightdesk, "list_area", toggle = True, text = "Area" )
+        row.prop(lightdesk, "list_point", toggle = True, text = "Point" )
+        row.prop(lightdesk, "list_spot", toggle = True, text = "Spot" )
+        row.prop(lightdesk, "list_sun", toggle = True, text = "Sun" )
         row = layout.row()
         row.template_list("LIGHTDESK_UL_lights", "", lightdesk, "filtered", lightdesk, "selected_index", rows = 2, maxrows = 5, type = 'DEFAULT')
         row = layout.row()
@@ -402,10 +412,6 @@ class LIGHTDESK_PT_channel(Panel):
 # Properties
 #===============================================================================
 
-class LIGHTDESK_PG_filter(PropertyGroup):
-    name : StringProperty()
-    include : BoolProperty(default = False, update = filter_lights)
-
 class LIGHTDESK_PG_light(PropertyGroup):
     name : StringProperty()
     object : PointerProperty(type = bpy.types.Object)
@@ -415,9 +421,12 @@ class LIGHTDESK_PG_channel(PropertyGroup):
     object : PointerProperty(type = bpy.types.Object)
 
 class LIGHTDESK_PG_properties(PropertyGroup):
+    list_area : BoolProperty(default = True, update = filter_lights)
+    list_point : BoolProperty(default = True, update = filter_lights)
+    list_spot : BoolProperty(default = True, update = filter_lights)
+    list_sun : BoolProperty(default = True, update = filter_lights)
     lights : CollectionProperty(type = LIGHTDESK_PG_light)
     filtered : CollectionProperty(type = LIGHTDESK_PG_light)
-    filters : CollectionProperty(type = LIGHTDESK_PG_filter)
     channels : CollectionProperty(type = LIGHTDESK_PG_channel)
     selected_index : IntProperty(default = -1, update = update_tracking)
     selected_name : StringProperty()
@@ -436,7 +445,6 @@ classes = [
             LIGHTDESK_OT_add_all_lights,
             LIGHTDESK_OT_delete_channel,
             LIGHTDESK_OT_delete_all_channels,
-            LIGHTDESK_PG_filter,
             LIGHTDESK_PG_light,
             LIGHTDESK_PG_channel,
             LIGHTDESK_PG_properties,
@@ -454,6 +462,7 @@ def register():
         logging.debug(f"- {cls}")
         register_class(cls)
     bpy.types.Scene.lightdesk = PointerProperty(type = LIGHTDESK_PG_properties)
+    bpy.app.handlers.load_post.append(init)
 
 def unregister():
     logging.debug("--------------------------------------------------")
@@ -477,7 +486,10 @@ def unregister():
             logging.error(f"***ERROR*** Could not unregister {class_id}")
             logging.error(e)
             pass
-    lightdesk.channels.clear()
-    lightdesk.lights.clear()
-    lightdesk.filtered.clear()
+    try:
+        index = bpy.app.handlers.depsgraph_update_post.index(init)
+    except ValueError:
+        pass
+    else:
+        bpy.app.handlers.load_post.remove(init)
     del bpy.types.Scene.lightdesk
