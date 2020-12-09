@@ -1,16 +1,19 @@
 # Lightdesk
 
-An add-on for Blender 2.8+
+Lighting add-on for Blender 2.8+
 
 Lightdesk provides a lighting control panel located in the sidebar of the 3D view.
-Add lights within the current scene to lighting channels on this desk. Control the visibility, power, and color of multiple lights from this one location. Adjust and experiment with your scene lighting without having to hunt/click lights in the 3D/Outliner views then select their light properties tab.
+Add lights within the current scene to lighting channels on this desk. Control the visibility, power, and color of multiple lights from this one location. Adjust and experiment with your scene lighting without having to hunt/click lights and switch back and forth between 3D/Outliner and property views.
 
 ## Installation
-Either install lightdesk.zip from anywhere [as per usual](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html), or copy `__init__.py` to a subfolder within your Blender installation add-ons directory, e.g. `C:\Program Files\Blender Foundation\Blender 2.90\2.90\scripts\addons\lightdesk`
+Install by either of these methods:
+
+* Download and install lightdesk.zip from anywhere, [as per usual](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)
+* Download and copy `__init__.py` to a subfolder within your Blender installation add-ons directory, e.g. `C:\Program Files\Blender Foundation\Blender 2.90\2.90\scripts\addons\lightdesk`, then enable within Blender preferences.
 
 ## Usage
 
-Select the Lightdesk tab in the 3D view sidebar ('N') to display the Scene Lights panel.
+Select the Lightdesk tab in the sidebar of the 3D view to display the Scene Lights panel.
 
 ![Light selection](lights.png)
 
@@ -37,6 +40,6 @@ Operators within each channel are, from left to right:
 Lightdesk channels and settings are configured per scene and are saved with the .blend file, so your channel setup will be recreated next time you load your project.
 
 
-## Note
+## Disclaimer
 
 This add-on is provided as-is and without restriction for use under GNU GPL. It was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between views and property panels. Feel free to use, distribute, fork, adapt, extend, or abuse this in any manner that you wish. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic. It might make you 0.2% more sexy... although this may be difficult to prove.
