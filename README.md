@@ -3,7 +3,7 @@
 Lighting add-on for Blender 2.8+
 
 Lightdesk provides a lighting control panel located in the sidebar of the 3D view.
-Add lights from within the current scene to lighting channels on this desk. Control the visibility, power, and color of multiple lights from one location. Adjust and experiment with your scene lighting without having to hunt/click lights and switch back and forth between 3D/Outliner and property views.
+Add lights from within the current scene to lighting channels on this desk. Control the visibility, power, and color of multiple lights from one location. Adjust and experiment with your scene lighting without having to hunt/click lights and constantly switch back and forth between 3D/Outliner and property views.
 
 ## Installation
 Install using one of these methods:
