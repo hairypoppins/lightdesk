@@ -8,7 +8,7 @@ Add lights from within the current scene to lighting channels on this desk. Cont
 ## Installation
 Install using one of these methods:
 
-* Download and install lightdesk.zip from anywhere, [as per usual](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)
+* Download and install Lightdesk.zip from anywhere, [as per the Blender manual](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html)
 * Download and copy `__init__.py` to a subfolder within your Blender installation add-ons directory, e.g. `C:\Program Files\Blender Foundation\Blender 2.90\2.90\scripts\addons\lightdesk`, then enable within Blender preferences.
 
 ## Usage
@@ -42,10 +42,10 @@ Operators within each channel are, from left to right:
 Lightdesk channels and settings are configured per scene and are saved with the .blend file, so your channel setup will be recreated next time you load your project.
 
 
-## Disclaimer
+## Please note
 
-This add-on is provided as-is and without restriction for use under GNU GPL. It was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between views and property panels. Feel free to use, distribute, fork, adapt, extend, or abuse this in any manner that you wish. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic. It might make you 0.2% more sexy... although this may be difficult to prove.
+Lightdesk was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between views and property panels. It is provided as-is and without restriction for use under GNU GPL-3.0. Feel free to use, distribute, fork, modify, or extend this in any manner that you wish. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic. It might make you 0.2% more sexy... although this may be difficult to prove.
 
-Although I do not intend to provide long-term support for Lightdesk, kindly report any issues or leave other feedback via [insert tracker link](http://www.sometrackingthing.com)
+Although I do not intend to provide long-term support for Lightdesk, kindly report any issues or leave feedback via [insert tracker link](http://www.sometrackingthing.com)
 
-I hope that Lightdesk helps you in your creative endeavours.
+I hope that Lightdesk proves of some help in your creative endeavours.
