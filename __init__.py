@@ -387,7 +387,7 @@ class LIGHTDESK_PT_channel(Panel):
         split = row.split(factor = 0.15)
         split.label(text = "", icon = f"LIGHT_{lightdesk.channels[self.bl_idname].object.data.type}")
         split = split.split(factor = 0.8)
-        split.prop(lightdesk.channels[self.bl_idname].object, "name", text = "")
+        split.label(text = lightdesk.channels[self.bl_idname].object.name)
         op = split.operator("lightdesk.delete_channel", icon = 'X', text = "", emboss = False)
         split = split.split()
         op.channel_name = str(self.bl_idname)
