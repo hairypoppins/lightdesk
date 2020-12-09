@@ -63,10 +63,7 @@ light_types = ['AREA', 'POINT', 'SPOT', 'SUN']
 
 @persistent
 def init(scene):
-    logging.debug("###########################################################")
     logging.debug("LIGHTDESK INIT ############################################")
-    logging.debug("###########################################################")
-    bpy.app.handlers.load_post.remove(init)
 
 
 def output_debug():
@@ -486,10 +483,5 @@ def unregister():
             logging.error(f"***ERROR*** Could not unregister {class_id}")
             logging.error(e)
             pass
-    try:
-        index = bpy.app.handlers.depsgraph_update_post.index(init)
-    except ValueError:
-        pass
-    else:
-        bpy.app.handlers.load_post.remove(init)
     del bpy.types.Scene.lightdesk
+    bpy.app.handlers.load_post.remove(init)
