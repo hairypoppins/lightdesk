@@ -6,7 +6,7 @@ Lightdesk provides a lighting control panel located in the sidebar of the 3D vie
 Add lights within the current scene to lighting channels on this desk. Control the visibility, power, and color of multiple lights from this one location. Adjust and experiment with your scene lighting without having to hunt/click lights in the 3D/Outliner views then select their light properties tab.
 
 ## Installation
-Either install lightdesk.zip from anywhere, [as per usual with add-ons](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html), or copy all the files to a subfolder within your Blender installation add-ons directory, e.g. `C:\Program Files\Blender Foundation\Blender 2.90\2.90\scripts\addons\lightdesk`
+Either install lightdesk.zip from anywhere [as per usual](https://docs.blender.org/manual/en/latest/editors/preferences/addons.html), or copy `__init__.py` to a subfolder within your Blender installation add-ons directory, e.g. `C:\Program Files\Blender Foundation\Blender 2.90\2.90\scripts\addons\lightdesk`
 
 ## Usage
 
