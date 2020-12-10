@@ -66,27 +66,31 @@ def init(scene):
     logging.debug("LIGHTDESK INIT ############################################")
 
 
-def output_debug():
+def test():
+    pass
+
+
+def log_data():
     lightdesk = bpy.context.scene.lightdesk
     logging.debug("--------------------------------------------------")
     logging.debug(f"{len(lightdesk.lights)} Scene lights:")
     logging.debug(f"- {lightdesk.lights.keys()}")
     logging.debug("....................")
     logging.debug(f"Light filters:")
-    logging.debug(f"list_area : {lightdesk.list_area}")
-    logging.debug(f"list_point : {lightdesk.list_point}")
-    logging.debug(f"list_spot : {lightdesk.list_spot}")
-    logging.debug(f"list_sun : {lightdesk.list_sun}")
+    logging.debug(f"AREA : {lightdesk.list_area}")
+    logging.debug(f"POINT : {lightdesk.list_point}")
+    logging.debug(f"SPOT : {lightdesk.list_spot}")
+    logging.debug(f"SUN : {lightdesk.list_sun}")
     logging.debug("....................")
     logging.debug(f"{len(lightdesk.filtered)} Filtered lights:")
     logging.debug(f"- {lightdesk.filtered.keys()}")
     logging.debug(f"- {lightdesk.selected_name} ({lightdesk.selected_index}) selected")
     logging.debug("....................")
     logging.debug(f"{len(lightdesk.channels)} Channels:")
-    for channel in bpy.context.scene.lightdesk.channels:
-        logging.debug(f"- {channel.name}, {channel.object.name}")
+    if len(lightdesk.channels):
+        for channel in bpy.context.scene.lightdesk.channels:
+            logging.debug(f"- {channel.name}, {channel.object.name}")
     logging.debug("--------------------------------------------------")
-    return{'FINSHED'}
 
 
 def get_lights(self, context):
@@ -130,15 +134,15 @@ def add_light_to_collection(object, collection):
     light.object = object
 
 
-def get_light_channel(light_name):
+def get_channel(light_name):
     logging.debug(f"Looking for existing channel for {light_name}...")
     lightdesk = bpy.context.scene.lightdesk
     for channel in lightdesk.channels:
         if channel.object.name == light_name:
             logging.debug(f"Channel found: {channel.name}")
-            return True
+            return channel.name
     logging.debug(f"No channel found")
-    return False
+    return ""
 
 
 def update_tracking(self, context):
@@ -146,7 +150,7 @@ def update_tracking(self, context):
     lightdesk = bpy.context.scene.lightdesk
     if lightdesk.selected_index > -1 and lightdesk.selected_index <= len(lightdesk.filtered) - 1:
         lightdesk.selected_name = lightdesk.filtered[lightdesk.selected_index].name
-        lightdesk.selected_channel = get_light_channel(lightdesk.selected_name)
+        lightdesk.selected_channel = get_channel(lightdesk.selected_name)
         logging.debug(f"{lightdesk.selected_name} selected")
 
 
@@ -156,17 +160,17 @@ def validate_tracking():
     if lightdesk.selected_index > -1:
         lookup = lightdesk.filtered.find(lightdesk.selected_name)
         if lookup > -1:
-            logging.debug(f"{lightdesk.selected_name} found in light collection")
+            logging.debug(f"{lightdesk.selected_name} found in filtered collection")
             lightdesk.selected_index = lookup
-            lightdesk.selected_channel = get_light_channel(lightdesk.selected_name)
+            lightdesk.selected_channel = get_channel(lightdesk.selected_name)
         else:
-            logging.debug(f"{lightdesk.selected_name} not found in light collection, trackers reset")
+            logging.debug(f"{lightdesk.selected_name} not found in filtered collection, trackers reset")
             lightdesk.selected_index = -1
             lightdesk.selected_name = ""
             lightdesk.selected_channel = False
 
 
-def register_panel_class():
+def register_panel():
     class_id = f"LIGHTDESK_PT_{str(uuid4().hex)}"
     logging.debug(f"Registering panel class {class_id}...")
     panel = type(class_id, (LIGHTDESK_PT_channel, Panel, ), {"bl_idname" : class_id,})
@@ -174,11 +178,11 @@ def register_panel_class():
         register_class(panel)
         return class_id
     except Exception as e:
-        logging.error(f"***ERROR*** register_panel_class: {class_id}")
+        logging.error(f"***ERROR*** register_panel: {class_id}")
         logging.error(e)
 
 
-def unregister_panel_class(channel_name):
+def unregister_panel(channel_name):
     if len(channel_name):
         logging.debug(f"Unregistering panel class '{channel_name}'...")
         try:
@@ -186,27 +190,27 @@ def unregister_panel_class(channel_name):
             cls = eval(class_name)
             unregister_class(cls)
         except Exception as e:
-            logging.error(f"***ERROR*** unregister_panel_class: {channel_name}")
+            logging.error(f"***ERROR*** unregister_panel: {channel_name}")
             logging.error(e)
     else:
-        logging.error("***ERROR*** unregister_panel_class: Missing channel_name")
+        logging.error("***ERROR*** unregister_panel: Missing channel_name")
 
 
 def add_light_to_channel(light_name):
     lightdesk = bpy.context.scene.lightdesk
-    if not get_light_channel(light_name):
+    if not get_channel(light_name):
         logging.debug("Creating channel...")
         try:
             channel = lightdesk.channels.add()
             channel.object = bpy.data.objects[light_name]
-            channel.name = register_panel_class()
+            channel.name = register_panel()
             validate_tracking()
         except Exception as e:
             logging.error(f"***ERROR*** create_channel: {lightdesk.selected_name} ({channel.name})")
             logging.error(e)
 
 
-def add_all_lights_to_channels():
+def add_all_lights():
     lightdesk = bpy.context.scene.lightdesk
     logging.debug(f"Adding {len(lightdesk.filtered)} lights to channels...")
     for light in lightdesk.filtered:
@@ -218,12 +222,8 @@ def delete_channel(channel_name):
     lightdesk = bpy.context.scene.lightdesk
     index = lightdesk.channels.find(channel_name)
     if index > -1:
-        try:
-            unregister_panel_class(channel_name)
-            lightdesk.channels.remove(index)
-            #validate_tracking()
-        except Exception as e:
-            logging.error(e)
+        unregister_panel(channel_name)
+        lightdesk.channels.remove(index)
     else:
         logging.error(f"***ERROR*** delete_channel: Could not find channel_name '{channel_name}'")
 
@@ -235,12 +235,26 @@ def delete_all_channels():
         delete_channel(channel.name)
 
 
+def kill_orphans():
+    lightdesk = bpy.context.scene.lightdesk
+    if len(lightdesk.channels):
+        logging.debug(f"Validating {len(lightdesk.channels)} channels...")
+        for channel in lightdesk.channels:
+            try:
+                class_name = f"bpy.types.{channel.name}"
+                cls = eval(class_name)
+                logging.debug(f"- class {class_name} OK")
+            except Exception as e:
+                logging.error(f"***ERROR*** class {class_name} does not exist, deleting channel...")
+                delete_channel(channel.name)
+    pass
+
 #===============================================================================
 # Operators
 #===============================================================================
 
-class LIGHTDESK_OT_output_debug(Operator):
-    bl_idname = "lightdesk.output_debug"
+class LIGHTDESK_OT_log_data(Operator):
+    bl_idname = "lightdesk.log_data"
     bl_label = "Output debug information to console"
     bl_options = {'INTERNAL'}
 
@@ -249,7 +263,22 @@ class LIGHTDESK_OT_output_debug(Operator):
         return bool(context.scene.lightdesk)
 
     def execute(self, context):
-        output_debug()
+        log_data()
+        return{'FINISHED'}
+
+
+class LIGHTDESK_OT_test(Operator):
+    bl_idname = "lightdesk.test"
+    bl_label = "Test a thing"
+    bl_options = {'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        return bool(context.scene.lightdesk)
+
+    def execute(self, context):
+        logging.debug("Testing the thing...")
+        test()
         return{'FINISHED'}
 
 
@@ -276,7 +305,7 @@ class LIGHTDESK_OT_add_selected_light(Operator):
 
     @classmethod
     def poll(cls, context):
-        return not context.scene.lightdesk.selected_channel
+        return context.scene.lightdesk.selected_channel == ""
 
     def execute(self, context):
         add_light_to_channel(context.scene.lightdesk.selected_name)
@@ -293,7 +322,7 @@ class LIGHTDESK_OT_add_all_lights(Operator):
         return bool(context.scene.lightdesk and len(context.scene.lightdesk.filtered))
 
     def execute(self, context):
-        add_all_lights_to_channels()
+        add_all_lights()
         return {'FINISHED'}
 
 
@@ -355,8 +384,9 @@ class LIGHTDESK_PT_lights(Panel):
         layout = self.layout
         if logging.getLevelName(logging.root.level) == 'DEBUG':
             row = layout.row()
-            row.operator("lightdesk.get_lights", text="Get Lights")
-            row.operator("lightdesk.output_debug", text="Output Debug")
+            row.operator("lightdesk.get_lights", text="Populate")
+            row.operator("lightdesk.log_data", text="Debug")
+            row.operator("lightdesk.test", text="Test")
         row = layout.row(align = True)
         row.prop(lightdesk, "list_area", toggle = True, text = "Area" )
         row.prop(lightdesk, "list_point", toggle = True, text = "Point" )
@@ -427,7 +457,7 @@ class LIGHTDESK_PG_properties(PropertyGroup):
     channels : CollectionProperty(type = LIGHTDESK_PG_channel)
     selected_index : IntProperty(default = -1, update = update_tracking)
     selected_name : StringProperty()
-    selected_channel : BoolProperty(default = False)
+    selected_channel : StringProperty()
 
 
 #===============================================================================
@@ -436,7 +466,8 @@ class LIGHTDESK_PG_properties(PropertyGroup):
 
 
 classes = [
-            LIGHTDESK_OT_output_debug,
+            LIGHTDESK_OT_test,
+            LIGHTDESK_OT_log_data,
             LIGHTDESK_OT_get_lights,
             LIGHTDESK_OT_add_selected_light,
             LIGHTDESK_OT_add_all_lights,
@@ -465,15 +496,11 @@ def unregister():
     logging.debug("--------------------------------------------------")
     logging.debug("Deactivated, unregistering components...")
     lightdesk = bpy.context.scene.lightdesk
+    logging.debug(f"{len(lightdesk.channels)} channels:")
     if len(lightdesk.channels):
-        logging.debug(f"{len(lightdesk.channels)} panel classes:")
         for channel in lightdesk.channels:
-            if channel.name:
-                unregister_panel_class(channel.name)
-            else:
-                logging.warning(f"***ERROR*** Channel {channel.object.name} has no panel_class, skipping")
-    else:
-        logging.debug("No panel classes registered")
+            unregister_panel(channel.name)
+    lightdesk.channels.clear()
     logging.debug(f"Unregistering {len(classes)} main classes:")
     for cls in reversed(classes):
         logging.debug(f"- {cls}")
@@ -482,6 +509,5 @@ def unregister():
         except Exception as e:
             logging.error(f"***ERROR*** Could not unregister {class_id}")
             logging.error(e)
-            pass
     del bpy.types.Scene.lightdesk
     bpy.app.handlers.load_post.remove(init)
