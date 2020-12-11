@@ -1,0 +1,17 @@
+TODO:
+* Add try/except handlers where needed
+* Add channel-panel validation and self-rectify routine
+- test cases for scene add/remove/change
+- refine UI layouts, update screenshots and readme
+
+ISSUES:
+** light list, filter types not populated upon activation
+ - check lightdesk.init flag in PT_lights draw OR set a 2s timer in load_post to set init flase and trigger get_lights in draw
+* light list not refreshed upon object add/remove
+* light list not refreshed upon scene change? test this
+
+IDEAS:
+? set a lightdesk property to track the active scene object with a msgbus callback
+    which triggers a check for object type is LIGHT or None to call collate_scene_lights
+    when objects are added/deleted in the scene
+? channel panel class bl_option = {'INSTANCED'} for modifier style sub-panel
