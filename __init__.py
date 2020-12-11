@@ -83,15 +83,10 @@ def exec_queued_functions():
 
 @persistent
 def load_post_handler(scene):
-    logging.debug("LOAD_POST HANDLER ####################################")
+    logging.debug("* LOAD_POST handler ----------")
     collate_lights()
     filter_lights()
-    logging.debug("LOAD_POST HANDLER ####################################")
-
-
-def test():
-    logging.debug("TESTING 123...")
-    deadhead_channels()
+    logging.debug("* LOAD_POST handler ----------")
 
 
 def log_data():
@@ -310,21 +305,6 @@ class LIGHTDESK_OT_log_data(Operator):
         return{'FINISHED'}
 
 
-class LIGHTDESK_OT_test(Operator):
-    bl_idname = "lightdesk.test"
-    bl_label = "Test a thing"
-    bl_options = {'INTERNAL'}
-
-    @classmethod
-    def poll(cls, context):
-        return bool(context.scene.lightdesk)
-
-    def execute(self, context):
-        logging.debug("Testing the thing...")
-        test()
-        return{'FINISHED'}
-
-
 class LIGHTDESK_OT_refresh_light_list(Operator):
     bl_idname = "lightdesk.refresh_light_list"
     bl_label = "Get list of scene lights"
@@ -429,7 +409,6 @@ class LIGHTDESK_PT_lights(Panel):
             row = layout.row()
             row.operator("lightdesk.refresh_light_list", text="Populate")
             row.operator("lightdesk.log_data", text="Debug")
-            row.operator("lightdesk.test", text="Test")
         row = layout.row(align = True)
         row.prop(lightdesk, "list_area", toggle = True, text = "Area" )
         row.prop(lightdesk, "list_point", toggle = True, text = "Point" )
