@@ -39,11 +39,11 @@ Operators within each channel are, from left to right:
 4. Light color
 
 
-Lightdesk channels and settings are configured per scene and are saved with the .blend file, so your channel setup will be recreated next time you load your project.
+Lightdesk channels and settings are configured per scene and are saved with the .blend file, so your channel setup will be recreated next time you load your project. Note that, at present, Lightdesk cannot preserve custom ordering of channels between file loads or scene switches and instead will recreate channels in the order that they were originally added.
 
 
-## Note
+## Disclaimer
 
-Lightdesk was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between views and property panels. It is provided as-is and without restriction for use under GNU GPL. Feel free to use, distribute, fork, modify, or extend this in any manner that you wish. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic. It might make you 0.2% more sexy... though this may prove difficult to measure.
+Lightdesk was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between views and property panels. It is provided as-is and without restriction for use under GNU GPL. Feel free to use, distribute, fork, modify, or extend this in any manner that you wish. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic. It might make you 0.2% more sexy... although this may prove difficult to verify.
 
-I do not currently intend any further development or to provide ongoing support. Kindly report any issues here and, if it's a serious defect and a fix is within my grasp, I will address it as soon as I can. Thanks in advance for your feedback, and I hope that Lightdesk proves of some help to you in your creative endeavours.
+I do not currently intend any further development or to provide ongoing support. Kindly report any issues here and, if it's a serious defect and a fix appears to be within my reach, I will address it as soon as I can. Thanks in advance for your feedback, and I hope that Lightdesk proves of some small help to you in your creative endeavours.
