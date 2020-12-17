@@ -18,7 +18,7 @@
 
 bl_info = {
     "name": "Lightdesk",
-    "description": "Control scene lights from a lighting desk panel",
+    "description": "Control multiple scene lights from a single Lightdesk panel in the 3D view",
     "author": "Quentin Walker",
     "blender": (2, 80, 0),
     "version": (0, 1, 6),
