@@ -22,11 +22,16 @@ This lists all of the light objects in the current scene. The toggle buttons abo
 Select a light from the list and click Add to create a new lighting channel and assign the selected light to it.
 Optionally, click Add All to quickly create channels for all the lights currently displayed in the light list. Click Delete All to delete all current channels, or remove individual channels by clicking the Delete button in their panel headers.
 
-![Light selection](channels.png)
+![Channels](channels.png)
 
 By default, channels appear below Scene Lights, but all panels can be drag-dropped to reorder and collapsed when additional screen space is required.
 
+
+![Collapsed](collapsed.png)
+
 Each channel header contains the name of the associated light and a Delete button. Note that clicking the Delete button only removes the channel from Lightdesk and will not delete the associated light object.
+
+![Channel](channel.png)
 
 Operators within each channel are, from left to right:
 
