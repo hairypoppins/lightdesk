@@ -19,14 +19,14 @@ Select the Lightdesk tab in the sidebar of the 3D view to display the Scene Ligh
 
 This lists all of the light objects in the current scene. The toggle buttons above may be used to filter the list by light type. Standard filter and sort-by-name options are also available from the drop-down section at the foot of the list.
 
-Select a light from the list and click Add Selected to create a new lighting channel and assign the selected light to it.
-Optionally, click Add All to quickly create channels for all the lights currently displayed in the light list.
+Select a light from the list and click Add to create a new lighting channel and assign the selected light to it.
+Optionally, click Add All to quickly create channels for all the lights currently displayed in the light list. Click Delete All to delete all current channels, or remove individual channels by clicking the Delete button in their panel headers.
 
 ![Light selection](channels.png)
 
 By default, channels appear below Scene Lights, but all panels can be drag-dropped to reorder and collapsed when additional screen space is required.
 
-Each channel header contains the name of the associated light and a Delete Channel button. Note that clicking the Delete Channel button will not delete the associated light, only remove that channel from Lightdesk.
+Each channel header contains the name of the associated light and a Delete button. Note that clicking the Delete button only removes the channel from Lightdesk and will not delete the associated light object.
 
 Operators within each channel are, from left to right:
 
@@ -44,6 +44,6 @@ Lightdesk channels and settings are configured per scene and are saved with the 
 
 ## Disclaimer
 
-Lightdesk was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between views and property panels. It is provided as-is and without restriction for use under GNU GPL. Feel free to use, distribute, fork, modify, or extend this in any manner that you wish. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic. It might make you 0.2% more sexy... although this may prove difficult to verify.
+Lightdesk was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between view window, outliner, and property panel. This add-on is provided as-is and free for use under GNU GPL. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic.
 
-I do not currently intend any further development or to provide ongoing support. Kindly report any issues here and, if it's a serious defect and a fix appears to be within my reach, I will address it as soon as I can. Thanks in advance for your feedback, and I hope that Lightdesk proves of some small help to you in your creative endeavours.
+Although I do not intend any further development or to provide ongoing support, kindly report any issues here and I will address them as best I can. Thanks in advance for your feedback, and I hope that Lightdesk might prove of some small help to you in your creative endeavours.
