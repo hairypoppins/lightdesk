@@ -26,9 +26,6 @@ Optionally, click Add All to quickly create channels for all the lights currentl
 
 By default, channels appear below Scene Lights, but all panels can be drag-dropped to reorder and collapsed when additional screen space is required.
 
-
-![Collapsed](collapsed.png)
-
 Each channel header contains the name of the associated light and a Delete button. Note that clicking the Delete button only removes the channel from Lightdesk and will not delete the associated light object.
 
 ![Channel](channel.png)
