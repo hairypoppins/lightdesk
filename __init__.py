@@ -105,7 +105,7 @@ def subscribe_msgbus():
         key = subscription,
         owner = subscriptions_owner,
         args = (),
-        notify = scene_switch,
+        notify = switch_scene,
         )
 
 def unsubscribe_msgbus():
@@ -132,10 +132,14 @@ def remove_handlers():
 @persistent
 def load_pre_handler(scene):
     logging.debug("*** LOAD_PRE handler...")
+    delete_scene_panels()
+    unsubscribe_msgbus()
 
 @persistent
 def load_post_handler(scene):
     logging.debug("*** LOAD_POST handler...")
+    create_scene_panels()
+    subscribe_msgbus()
 
 def add_to_exec_queue(function):
     exec_queue.put(function)
@@ -147,10 +151,10 @@ def exec_queued_functions():
         function()
     return 1.0
 
-def scene_switch():
+def switch_scene():
     global active_scene
     new_scene = bpy.data.window_managers[0].windows[0].scene
-    logging.debug(f"* Scene switched: [{active_scene.name}] > [{new_scene.name}]")
+    logging.debug(f"*** Scene switched: [{active_scene.name}] > [{new_scene.name}]")
     delete_scene_panels()
     collate_lights()
     filter_lights()
@@ -158,7 +162,7 @@ def scene_switch():
     sync_active_scene()
     create_scene_panels()
 
-def log_data():
+def debug_data():
     lightdesk = bpy.context.scene.lightdesk
     logging.debug("--------------------------------------------------")
     logging.debug(f"Scene: {active_scene.name}")
@@ -203,7 +207,7 @@ def collate_lights():
         logging.error(f"*** ERROR *** register_panel: {panel_id}")
         logging.error(e)
 
-def refresh_light_list(self, context):
+def refresh_lights(self, context):
     collate_lights()
     update_filters(self, context)
 
@@ -291,15 +295,21 @@ def unregister_panel(panel_id):
 
 def delete_scene_panels():
     global active_scene
-    logging.debug(f"Deleting [{len(active_scene.lightdesk.channels)}] panels from {active_scene.name}...")
-    for channel in active_scene.lightdesk.channels:
-        unregister_panel(channel.name)
+    if len(active_scene.lightdesk.channels):
+        logging.debug(f"Deleting [{len(active_scene.lightdesk.channels)}] panels from {active_scene.name}...")
+        for channel in active_scene.lightdesk.channels:
+            unregister_panel(channel.name)
+    else:
+        logging.debug(f"No channels in {active_scene.name}")
 
 def create_scene_panels():
     global active_scene
-    logging.debug(f"Creating [{len(active_scene.lightdesk.channels)}] panels for {active_scene.name}...")
-    for channel in active_scene.lightdesk.channels:
-        register_panel(channel.name)
+    if len(active_scene.lightdesk.channels):
+        logging.debug(f"Creating [{len(active_scene.lightdesk.channels)}] panels for {active_scene.name}...")
+        for channel in active_scene.lightdesk.channels:
+            register_panel(channel.name)
+    else:
+        logging.debug(f"No channels in {active_scene.name}")
 
 def add_light_to_channel(light_name):
     lightdesk = bpy.context.scene.lightdesk
@@ -312,7 +322,7 @@ def add_light_to_channel(light_name):
             register_panel(channel.name)
             validate_tracking()
         except Exception as e:
-            logging.error(f"*** ERROR *** create_channel: {lightdesk.selected_name} ({channel.name})")
+            logging.error(f"*** ERROR: create_channel {lightdesk.selected_name} ({channel.name})")
             logging.error(e)
             deadhead_channels()
 
@@ -334,8 +344,8 @@ def pop_channel(channel_name):
 
 def delete_channel(channel_name):
     logging.debug(f"Deleting channel {channel_name}...")
-    pop_channel(channel_name)
     unregister_panel(channel_name)
+    pop_channel(channel_name)
 
 def delete_all_channels():
     logging.debug(f"Deleting {len(bpy.context.scene.lightdesk.channels)} channels:")
@@ -349,16 +359,16 @@ def deadhead_channels():
     if len(lightdesk.channels):
         logging.debug(f"Verifying {len(lightdesk.channels)} channels...")
         for channel in lightdesk.channels:
-            if len(channel.name): # check panel class exists for channel.name, otherwise pop channel
+            if len(channel.name):
                 try:
                     class_name = f"bpy.types.{channel.name}"
                     cls = eval(class_name)
                     logging.debug(f"- class {class_name} OK")
                 except Exception as e:
-                    logging.warning(f"*** WARNING *** class {class_name} does not exist, deleting channel...")
+                    logging.warning(f"*** WARNING: class {class_name} does not exist, deleting channel...")
                     pop_channel(channel.name)
-            else: # if channel.name is empty, pop channel
-                    logging.warning(f"*** WARNING *** channel.name does not exist, deleting channel...")
+            else:
+                    logging.warning(f"*** WARNING: channel name undefined for {channel.object.name}, deleting channel...")
                     pop_channel(channel.name)
 
 
@@ -366,8 +376,8 @@ def deadhead_channels():
 # Operators
 #===============================================================================
 
-class LIGHTDESK_OT_log_data(Operator):
-    bl_idname = "lightdesk.log_data"
+class LIGHTDESK_OT_debug_data(Operator):
+    bl_idname = "lightdesk.debug_data"
     bl_label = "Output debug information to console"
     bl_options = {'INTERNAL'}
 
@@ -376,11 +386,11 @@ class LIGHTDESK_OT_log_data(Operator):
         return bool(context.scene.lightdesk)
 
     def execute(self, context):
-        log_data()
+        debug_data()
         return{'FINISHED'}
 
-class LIGHTDESK_OT_refresh_light_list(Operator):
-    bl_idname = "lightdesk.refresh_light_list"
+class LIGHTDESK_OT_refresh_lights(Operator):
+    bl_idname = "lightdesk.refresh_lights"
     bl_label = "Get list of scene lights"
     bl_options = {'INTERNAL'}
 
@@ -391,12 +401,12 @@ class LIGHTDESK_OT_refresh_light_list(Operator):
     def execute(self, context):
         scene = context.scene
         lightdesk = scene.lightdesk
-        refresh_light_list(self, context)
+        refresh_lights(self, context)
         return{'FINISHED'}
 
 class LIGHTDESK_OT_add_selected_light(Operator):
     bl_idname = "lightdesk.add_selected_light"
-    bl_label = "Add selected light to lightdesk"
+    bl_label = "Add selected light"
     bl_options = {'INTERNAL'}
 
     @classmethod
@@ -409,7 +419,7 @@ class LIGHTDESK_OT_add_selected_light(Operator):
 
 class LIGHTDESK_OT_add_all_lights(Operator):
     bl_idname = "lightdesk.add_all_lights"
-    bl_label = "Add all scene lights to lightdesk"
+    bl_label = "Add all displayed lights"
     bl_options = {'INTERNAL'}
 
     @classmethod
@@ -422,7 +432,7 @@ class LIGHTDESK_OT_add_all_lights(Operator):
 
 class LIGHTDESK_OT_delete_channel(Operator):
     bl_idname = "lightdesk.delete_channel"
-    bl_label = "delete selected light channel"
+    bl_label = "Delete light channel"
     bl_options = {'INTERNAL'}
 
     channel_name: StringProperty()
@@ -437,7 +447,7 @@ class LIGHTDESK_OT_delete_channel(Operator):
 
 class LIGHTDESK_OT_delete_all_channels(Operator):
     bl_idname = "lightdesk.delete_all_channels"
-    bl_label = "Delete all current light channels"
+    bl_label = "Delete all channels"
     bl_options = {'INTERNAL'}
 
     @classmethod
@@ -475,8 +485,8 @@ class LIGHTDESK_PT_lights(Panel):
         layout = self.layout
         if logging.getLevelName(logging.root.level) == 'DEBUG':
             row = layout.row()
-            row.operator("lightdesk.refresh_light_list", text="Populate")
-            row.operator("lightdesk.log_data", text="Debug")
+            row.operator("lightdesk.refresh_lights", text="Populate")
+            row.operator("lightdesk.debug_data", text="Debug")
         row = layout.row(align = True)
         row.prop(lightdesk, "list_area", toggle = True, text = "Area" )
         row.prop(lightdesk, "list_point", toggle = True, text = "Point" )
@@ -485,10 +495,9 @@ class LIGHTDESK_PT_lights(Panel):
         row = layout.row()
         row.template_list("LIGHTDESK_UL_lights", "", lightdesk, "filtered", lightdesk, "selected_index", rows = 2, maxrows = 5, type = 'DEFAULT')
         row = layout.row()
-        row.operator("lightdesk.add_selected_light", text="Add Selected", emboss = lightdesk.selected_index > -1)
+        row.operator("lightdesk.add_selected_light", text="Add")
         row.operator("lightdesk.add_all_lights", text="Add All")
-        row = layout.row()
-        row.operator("lightdesk.delete_all_channels", text="Delete All Channels")
+        row.operator("lightdesk.delete_all_channels", text="Delete All")
 
 class LIGHTDESK_PT_channel(Panel):
     bl_space_type = 'VIEW_3D'
@@ -556,8 +565,8 @@ class LIGHTDESK_PG_properties(PropertyGroup):
 
 
 classes = [
-            LIGHTDESK_OT_log_data,
-            LIGHTDESK_OT_refresh_light_list,
+            LIGHTDESK_OT_debug_data,
+            LIGHTDESK_OT_refresh_lights,
             LIGHTDESK_OT_add_selected_light,
             LIGHTDESK_OT_add_all_lights,
             LIGHTDESK_OT_delete_channel,
