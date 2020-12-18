@@ -60,7 +60,6 @@ light_types = ['AREA', 'POINT', 'SPOT', 'SUN']
 
 subscriptions_owner = object()
 active_scene = object()
-active_object = object()
 exec_queue = queue.Queue()
 
 #===============================================================================
@@ -72,7 +71,6 @@ def startup():
     add_to_exec_queue(collate_lights)
     add_to_exec_queue(filter_lights)
     add_to_exec_queue(sync_active_scene)
-    add_to_exec_queue(sync_active_object)
     add_to_exec_queue(create_scene_panels)
     add_handlers()
     add_subscriptions()
@@ -135,7 +133,7 @@ def remove_handlers():
 
 @persistent
 def handle_load_pre(scene):
-    logging.debug("### Executing LOAD_PRE handler...")
+    logging.debug("### LOAD_PRE handler...")
     try:
         lightdesk = bpy.context.scene.lightdesk
         delete_scene_panels()
@@ -145,20 +143,20 @@ def handle_load_pre(scene):
 
 @persistent
 def handle_load_post(scene):
-    logging.debug("### Executing LOAD_POST handler...")
+    logging.debug("### LOAD_POST handler...")
     create_scene_panels()
     add_subscriptions()
 
 @persistent
 def handle_depsgraph_update_post(scene):
-    global active_object
-    logging.debug("### Executing DEPSGRAPH_UPDATE_POST handler...")
-    print(bpy.context.object.name)
-    print(active_object.name)
-    if bpy.context.object != active_object:
-        logging.debug("===== REFRESH LIGHTS =====")
-
-
+    global active_scene
+    logging.debug("### DEPSGRAPH_UPDATE_POST handler...")
+    if bpy.context.scene != active_scene:
+        sync_active_scene()
+    if len(bpy.context.scene.objects) != len(active_scene.objects):
+        collate_lights()
+        filter_lights()
+        validate_tracking()
 
 def add_to_exec_queue(function):
     exec_queue.put(function)
@@ -172,11 +170,8 @@ def exec_queued_functions():
 
 def sync_active_scene():
     global active_scene
+    logging.debug(f"Syncing active_scene...")
     active_scene = bpy.data.window_managers[0].windows[0].scene
-
-def sync_active_object():
-    global active_object
-    active_object = bpy.context.object
 
 def switch_scene(context):
     global active_scene
@@ -187,14 +182,13 @@ def switch_scene(context):
     filter_lights()
     validate_tracking()
     sync_active_scene()
-    sync_active_object()
     create_scene_panels()
 
 def debug_data():
+    global active_scene
     lightdesk = bpy.context.scene.lightdesk
     logging.debug("--------------------------------------------------")
-    logging.debug(f"Scene: {active_scene.name}")
-    logging.debug(f"Object: {active_object.name}")
+    logging.debug(f"Scene: {active_scene.name} [{len(active.scene.objects)}]")
     logging.debug(f"{len(lightdesk.lights)} Scene lights:")
     logging.debug(f"- {lightdesk.lights.keys()}")
     logging.debug(f"Light filters:")
@@ -570,7 +564,6 @@ class LIGHTDESK_PG_channel(PropertyGroup):
     object : PointerProperty(type = bpy.types.Object)
 
 class LIGHTDESK_PG_properties(PropertyGroup):
-    init : BoolProperty(default = False)
     list_area : BoolProperty(default = True, update = update_filters)
     list_point : BoolProperty(default = True, update = update_filters)
     list_spot : BoolProperty(default = True, update = update_filters)
