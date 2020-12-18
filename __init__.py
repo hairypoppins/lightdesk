@@ -60,6 +60,7 @@ light_types = ['AREA', 'POINT', 'SPOT', 'SUN']
 
 subscriptions_owner = object()
 active_scene = object()
+active_object = object()
 exec_queue = queue.Queue()
 
 #===============================================================================
@@ -71,75 +72,93 @@ def startup():
     add_to_exec_queue(collate_lights)
     add_to_exec_queue(filter_lights)
     add_to_exec_queue(sync_active_scene)
+    add_to_exec_queue(sync_active_object)
     add_to_exec_queue(create_scene_panels)
     add_handlers()
-    subscribe_msgbus()
-    register_timers()
+    add_subscriptions()
+    add_timers()
 
 def shutdown():
     logging.debug("Shutting down...")
     delete_scene_panels()
-    unregister_timers()
-    unsubscribe_msgbus()
+    remove_timers()
+    remove_subscriptions()
     remove_handlers()
 
-def register_timers():
+def add_timers():
     if not bpy.app.timers.is_registered(exec_queued_functions):
-        logging.debug("- Registering timers...")
+        logging.debug("- Registering timer [exec_queued_functions]...")
         bpy.app.timers.register(exec_queued_functions)
 
-def unregister_timers():
+def remove_timers():
     if bpy.app.timers.is_registered(exec_queued_functions):
         logging.debug("- Unregistering timers...")
         bpy.app.timers.unregister(exec_queued_functions)
 
-def sync_active_scene():
-    global active_scene
-    active_scene = bpy.data.window_managers[0].windows[0].scene
-
-def subscribe_msgbus():
+def add_subscriptions():
     global subscriptions_owner
-    logging.debug("- Subscribing to msgbus...")
+    logging.debug("- Adding msgbus subscription [Scene]...")
     subscription = bpy.types.Window, "scene"
     bpy.msgbus.subscribe_rna(
         key = subscription,
         owner = subscriptions_owner,
-        args = (),
+        args = (bpy.context,),
         notify = switch_scene,
         )
 
-def unsubscribe_msgbus():
+def remove_subscriptions():
     global subscriptions_owner
-    logging.debug("- Unsubscribing from msgbus...")
+    logging.debug("- Removing msgbus subscriptions...")
     bpy.msgbus.clear_by_owner(subscriptions_owner)
 
 def add_handlers():
-    if load_pre_handler not in bpy.app.handlers.load_pre:
-        logging.debug("- Adding load_pre handler...")
-        bpy.app.handlers.load_pre.append(load_pre_handler)
-    if load_post_handler not in bpy.app.handlers.load_post:
-        logging.debug("- Adding load_post handler...")
-        bpy.app.handlers.load_post.append(load_post_handler)
+    if handle_load_pre not in bpy.app.handlers.load_pre:
+        logging.debug("- Adding handler [load_pre]...")
+        bpy.app.handlers.load_pre.append(handle_load_pre)
+    if handle_load_post not in bpy.app.handlers.load_post:
+        logging.debug("- Adding handler [load_post]...")
+        bpy.app.handlers.load_post.append(handle_load_post)
+    if handle_depsgraph_update_post not in bpy.app.handlers.depsgraph_update_post:
+        logging.debug("- Adding handler [depsgraph_update_post]...")
+        bpy.app.handlers.depsgraph_update_post.append(handle_depsgraph_update_post)
 
 def remove_handlers():
-    if load_pre_handler in bpy.app.handlers.load_pre:
-        logging.debug("- Removing load_pre handler...")
-        bpy.app.handlers.load_pre.remove(load_pre_handler)
-    if load_post_handler in bpy.app.handlers.load_post:
-        logging.debug("- Removing load_post handler...")
-        bpy.app.handlers.load_post.remove(load_post_handler)
+    if handle_load_pre in bpy.app.handlers.load_pre:
+        logging.debug("- Removing handler [load_pre]...")
+        bpy.app.handlers.load_pre.remove(handle_load_pre)
+    if handle_load_post in bpy.app.handlers.load_post:
+        logging.debug("- Removing handler [load_post]...")
+        bpy.app.handlers.load_post.remove(handle_load_post)
+    if handle_depsgraph_update_post in bpy.app.handlers.depsgraph_update_post:
+        logging.debug("- Removing handler [depsgraph_update_post]...")
+        bpy.app.handlers.depsgraph_update_post.remove(handle_depsgraph_update_post)
 
 @persistent
-def load_pre_handler(scene):
-    logging.debug("*** LOAD_PRE handler...")
-    delete_scene_panels()
-    unsubscribe_msgbus()
+def handle_load_pre(scene):
+    logging.debug("### Executing LOAD_PRE handler...")
+    try:
+        lightdesk = bpy.context.scene.lightdesk
+        delete_scene_panels()
+        remove_subscriptions()
+    except Exception as e:
+        pass
 
 @persistent
-def load_post_handler(scene):
-    logging.debug("*** LOAD_POST handler...")
+def handle_load_post(scene):
+    logging.debug("### Executing LOAD_POST handler...")
     create_scene_panels()
-    subscribe_msgbus()
+    add_subscriptions()
+
+@persistent
+def handle_depsgraph_update_post(scene):
+    global active_object
+    logging.debug("### Executing DEPSGRAPH_UPDATE_POST handler...")
+    print(bpy.context.object.name)
+    print(active_object.name)
+    if bpy.context.object != active_object:
+        logging.debug("===== REFRESH LIGHTS =====")
+
+
 
 def add_to_exec_queue(function):
     exec_queue.put(function)
@@ -151,34 +170,41 @@ def exec_queued_functions():
         function()
     return 1.0
 
-def switch_scene():
+def sync_active_scene():
+    global active_scene
+    active_scene = bpy.data.window_managers[0].windows[0].scene
+
+def sync_active_object():
+    global active_object
+    active_object = bpy.context.object
+
+def switch_scene(context):
     global active_scene
     new_scene = bpy.data.window_managers[0].windows[0].scene
-    logging.debug(f"*** Scene switched: [{active_scene.name}] > [{new_scene.name}]")
+    logging.debug(f"### Scene switched [{active_scene.name}] > [{new_scene.name}]")
     delete_scene_panels()
     collate_lights()
     filter_lights()
     validate_tracking()
     sync_active_scene()
+    sync_active_object()
     create_scene_panels()
 
 def debug_data():
     lightdesk = bpy.context.scene.lightdesk
     logging.debug("--------------------------------------------------")
     logging.debug(f"Scene: {active_scene.name}")
+    logging.debug(f"Object: {active_object.name}")
     logging.debug(f"{len(lightdesk.lights)} Scene lights:")
     logging.debug(f"- {lightdesk.lights.keys()}")
-    logging.debug("....................")
     logging.debug(f"Light filters:")
     logging.debug(f"- AREA : {lightdesk.list_area}")
     logging.debug(f"- POINT : {lightdesk.list_point}")
     logging.debug(f"- SPOT : {lightdesk.list_spot}")
     logging.debug(f"- SUN : {lightdesk.list_sun}")
-    logging.debug("....................")
     logging.debug(f"{len(lightdesk.filtered)} Filtered lights:")
     logging.debug(f"- {lightdesk.filtered.keys()}")
     logging.debug(f"- {lightdesk.selected_name} ({lightdesk.selected_index}) selected")
-    logging.debug("....................")
     logging.debug(f"{len(lightdesk.channels)} Channels:")
     if len(lightdesk.channels):
         for channel in bpy.context.scene.lightdesk.channels:
@@ -204,7 +230,7 @@ def collate_lights():
             add_light_to_collection(light, lightdesk.lights)
         logging.debug(f"- {len(lights)} lights added to collection")
     except Exception as e:
-        logging.error(f"*** ERROR *** register_panel: {panel_id}")
+        logging.error(f"### ERROR *** register_panel: {panel_id}")
         logging.error(e)
 
 def refresh_lights(self, context):
@@ -274,10 +300,10 @@ def register_panel(panel_id):
         try:
             register_class(panel)
         except Exception as e:
-            logging.error(f"*** ERROR *** register_panel: {panel_id}")
+            logging.error(f"### ERROR *** register_panel: {panel_id}")
             logging.error(e)
     else:
-        logging.error("*** ERROR *** register_panel: Missing panel_id")
+        logging.error("### ERROR *** register_panel: Missing panel_id")
 
 def unregister_panel(panel_id):
     if len(panel_id):
@@ -287,11 +313,11 @@ def unregister_panel(panel_id):
             cls = eval(class_name)
             unregister_class(cls)
         except Exception as e:
-            logging.error(f"*** ERROR *** unregister_panel: {panel_id}")
+            logging.error(f"### ERROR *** unregister_panel: {panel_id}")
             logging.error(e)
             deadhead_channels()
     else:
-        logging.error("*** ERROR *** unregister_panel: Missing panel_id")
+        logging.error("### ERROR *** unregister_panel: Missing panel_id")
 
 def delete_scene_panels():
     global active_scene
@@ -322,7 +348,7 @@ def add_light_to_channel(light_name):
             register_panel(channel.name)
             validate_tracking()
         except Exception as e:
-            logging.error(f"*** ERROR: create_channel {lightdesk.selected_name} ({channel.name})")
+            logging.error(f"### ERROR: create_channel {lightdesk.selected_name} ({channel.name})")
             logging.error(e)
             deadhead_channels()
 
@@ -339,7 +365,7 @@ def pop_channel(channel_name):
     if index > -1:
         lightdesk.channels.remove(index)
     else:
-        logging.error(f"*** ERROR *** delete_channel: Could not find channel_name '{channel_name}'")
+        logging.error(f"### ERROR *** delete_channel: Could not find channel_name '{channel_name}'")
         deadhead_channels()
 
 def delete_channel(channel_name):
@@ -365,10 +391,10 @@ def deadhead_channels():
                     cls = eval(class_name)
                     logging.debug(f"- class {class_name} OK")
                 except Exception as e:
-                    logging.warning(f"*** WARNING: class {class_name} does not exist, deleting channel...")
+                    logging.warning(f"### WARNING: class {class_name} does not exist, deleting channel...")
                     pop_channel(channel.name)
             else:
-                    logging.warning(f"*** WARNING: channel name undefined for {channel.object.name}, deleting channel...")
+                    logging.warning(f"### WARNING: channel name undefined for {channel.object.name}, deleting channel...")
                     pop_channel(channel.name)
 
 
@@ -520,19 +546,16 @@ class LIGHTDESK_PT_channel(Panel):
         op.channel_name = str(self.bl_idname)
 
     def draw(self, context):
-        try:
-            lightdesk = context.scene.lightdesk
-            layout = self.layout
-            row = layout.row()
-            split = row.split(factor = 0.25, align = True)
-            split.prop(lightdesk.channels[self.bl_idname].object, "hide_viewport", icon_only = True, emboss = False)
-            split.prop(lightdesk.channels[self.bl_idname].object, "hide_render", icon_only = True, emboss = False)
-            split = row.split(factor = 0.85)
-            split.prop(lightdesk.channels[self.bl_idname].object.data, "energy", text = "")
-            split = split.split()
-            split.prop(lightdesk.channels[self.bl_idname].object.data, "color", text = "")
-        except Exception as e:
-            pass
+        lightdesk = context.scene.lightdesk
+        layout = self.layout
+        row = layout.row()
+        split = row.split(factor = 0.25, align = True)
+        split.prop(lightdesk.channels[self.bl_idname].object, "hide_viewport", icon_only = True, emboss = False)
+        split.prop(lightdesk.channels[self.bl_idname].object, "hide_render", icon_only = True, emboss = False)
+        split = row.split(factor = 0.85)
+        split.prop(lightdesk.channels[self.bl_idname].object.data, "energy", text = "")
+        split = split.split()
+        split.prop(lightdesk.channels[self.bl_idname].object.data, "color", text = "")
 
 #===============================================================================
 # Properties
@@ -579,7 +602,7 @@ classes = [
             ]
 
 def register():
-    logging.debug("*** Lightdesk activated")
+    logging.debug("### Lightdesk activated")
     logging.debug(f"Registering [{len(classes)}] classes:")
     for cls in classes:
         logging.debug(f"- {cls}")
@@ -589,7 +612,7 @@ def register():
     logging.debug("Energise!")
 
 def unregister():
-    logging.debug("*** Lightdesk deactivated")
+    logging.debug("### Lightdesk deactivated")
     shutdown()
     logging.debug(f"Unregistering [{len(classes)}] classes:")
     for cls in reversed(classes):

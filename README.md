@@ -30,18 +30,16 @@ Each channel header contains the name of the associated light and a Delete butto
 
 ![Channel](channel.png)
 
-Operators within each channel are, from left to right:
+The light controls within each channel are, from left to right:
 
-1. Show/hide the light in the viewport
-
-2. Show/hide the light in the render
-
+1. Toggle viewport visibility
+2. Toggle render visibility
 3. Light power
-
 4. Light color
 
+All of these controls merely expose the underlying light properties and are all animatable from within Lightdesk thanks to Blender's RNA system.
 
-Lightdesk channels and settings are configured per scene and are saved with the .blend file, so your channel setup will be recreated next time you load your project. Note that, at present, Lightdesk cannot preserve custom ordering of channels between file loads or scene switches and instead will recreate channels in the order that they were originally added.
+Lightdesk channels and settings are configured per scene and are saved with the `.blend` file, so your channel setup will be recreated next time your project is loaded. Note that, at present, Lightdesk cannot preserve custom ordering of channels between file loads or scene switches and instead will recreate channels in the order that they were originally added.
 
 
 ## Disclaimer
