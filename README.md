@@ -37,13 +37,13 @@ The light controls within each channel are, from left to right:
 3. Light power
 4. Light color
 
-All of these controls merely expose the underlying light properties and are all animatable from within Lightdesk thanks to Blender's RNA system.
+These controls merely expose the underlying light properties and all are animatable from within Lightdesk thanks to Blender's RNA system.
 
 Lightdesk channels and settings are configured per scene and are saved with the `.blend` file, so your channel setup will be recreated next time your project is loaded. Note that, at present, Lightdesk cannot preserve custom ordering of channels between file loads or scene switches and instead will recreate channels in the order that they were originally added.
 
 
 ## Disclaimer
 
-Lightdesk was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between view window, outliner, and property panel. This add-on is provided as-is and free for use under GNU GPL. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic.
+Lightdesk was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between 3D view, scene outliner, and property panels. This add-on is provided as-is and free for use under GNU GPL. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic.
 
-Although I do not intend any further development or to provide ongoing support, kindly report any issues here and I will address them as best I can. Thanks in advance for your feedback, and I hope that Lightdesk might prove of some small help to you in your creative endeavours.
+Although I do not intend any further development or to provide ongoing support, if you report any issues here and I will endeavour to address them as best I can. Thanks in advance for your feedback, I hope that Lightdesk might prove of some small help to you in your creative endeavours.
