@@ -3,7 +3,7 @@
 Lighting add-on for Blender 2.8+
 
 Lightdesk provides a lighting control panel located in the sidebar of the 3D view.
-Add lights from within the current scene to lighting channels on this desk. Control the visibility, power, and color of multiple lights from one location. Adjust and experiment with your scene lighting without having to hunt/click lights and constantly switch back and forth between 3D/Outliner and property views.
+Add lights from within the current scene to lighting channels on this desk. Control the visibility, power, and color of multiple lights from one location. Adjust and experiment with your scene lighting without having to hunt/click lights and constantly clicking between 3D, Outliner, and property views.
 
 ## Installation
 Install using one of these methods:
@@ -17,10 +17,9 @@ Select the Lightdesk tab in the sidebar of the 3D view to display the Scene Ligh
 
 ![Light selection](lights.png)
 
-This lists all of the light objects in the current scene. The toggle buttons above may be used to filter the list by light type. Standard filter and sort-by-name options are also available from the drop-down section at the foot of the list.
+This lists all of the light objects in the current scene. The toggle buttons above may be used to filter the list by light type. Standard filter and sort by name options are available from the drop-down section at the foot of the list.
 
-Select a light from the list and click Add to create a new lighting channel and assign the selected light to it.
-Optionally, click Add All to quickly create channels for all the lights currently displayed in the light list. Click Delete All to delete all current channels, or remove individual channels by clicking the Delete button in their panel headers.
+Select a light in the list and click the Add button to create a new lighting channel and assign the selected light to it. Alternatively, click Add All to quickly create channels for all the lights currently displayed in the light list. Click Delete All to delete all current channels, or remove specific channels by clicking the Delete button in the channel headers.
 
 ![Channels](channels.png)
 
@@ -46,4 +45,4 @@ Lightdesk channels and settings are configured per scene and are saved with the 
 
 Lightdesk was initially developed to help with lighting setups in my own personal projects, where adjusting a large number of lights was proving a tedium of clicking back and forth between 3D view, scene outliner, and property panels. This add-on is provided as-is and free for use under GNU GPL. I am not a professional developer and make no claims for the quality of the design or implementation, nor its robustness, safety, performance, usefulness, or indeed any other characteristic.
 
-Although I do not intend any further development or to provide ongoing support, if you report any issues here and I will endeavour to address them as best I can. Thanks in advance for your feedback, I hope that Lightdesk might prove of some small help to you in your creative endeavours.
+Although I do not intend any further development or to provide ongoing support, if you report any issues here and I will endeavour to address them as best I can. Thanks in advance for your feedback, I hope that Lightdesk proves of some help to you in your creative endeavours.

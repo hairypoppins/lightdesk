@@ -66,7 +66,7 @@ exec_queue = queue.Queue()
 # Functions
 #===============================================================================
 
-def start_all_the_things():
+def startup():
     logging.debug("Starting all the things")
     add_function_to_exec_queue(collate_scene_lights)
     add_function_to_exec_queue(filter_lights)
@@ -76,7 +76,7 @@ def start_all_the_things():
     add_subscriptions()
     add_timers()
 
-def stop_all_the_stuff():
+def shutdown():
     logging.debug("Shutting down")
     delete_scene_panels()
     remove_timers()
@@ -85,17 +85,17 @@ def stop_all_the_stuff():
 
 def add_timers():
     if not bpy.app.timers.is_registered(exec_queued_functions):
-        logging.debug("- Registering timer: exec_queued_functions")
+        logging.debug("Registering timer: exec_queued_functions")
         bpy.app.timers.register(exec_queued_functions)
 
 def remove_timers():
     if bpy.app.timers.is_registered(exec_queued_functions):
-        logging.debug("- Unregistering timers")
+        logging.debug("Unregistering timers")
         bpy.app.timers.unregister(exec_queued_functions)
 
 def add_subscriptions():
     global subscriptions_owner
-    logging.debug("- Adding msgbus subscription: bpy.types.Window.scene")
+    logging.debug("Adding msgbus subscription: bpy.types.Window.scene")
     subscription = bpy.types.Window, "scene"
     bpy.msgbus.subscribe_rna(
         key = subscription,
@@ -106,29 +106,29 @@ def add_subscriptions():
 
 def remove_subscriptions():
     global subscriptions_owner
-    logging.debug("- Removing msgbus subscriptions")
+    logging.debug("Removing msgbus subscriptions")
     bpy.msgbus.clear_by_owner(subscriptions_owner)
 
 def add_handlers():
     if handle_load_pre not in bpy.app.handlers.load_pre:
-        logging.debug("- Adding handler: load_pre")
+        logging.debug("Adding handler: load_pre")
         bpy.app.handlers.load_pre.append(handle_load_pre)
     if handle_load_post not in bpy.app.handlers.load_post:
-        logging.debug("- Adding handler: load_post")
+        logging.debug("Adding handler: load_post")
         bpy.app.handlers.load_post.append(handle_load_post)
     if handle_depsgraph_update_post not in bpy.app.handlers.depsgraph_update_post:
-        logging.debug("- Adding handler: depsgraph_update_post")
+        logging.debug("Adding handler: depsgraph_update_post")
         bpy.app.handlers.depsgraph_update_post.append(handle_depsgraph_update_post)
 
 def remove_handlers():
     if handle_load_pre in bpy.app.handlers.load_pre:
-        logging.debug("- Removing handler: load_pre")
+        logging.debug("Removing handler: load_pre")
         bpy.app.handlers.load_pre.remove(handle_load_pre)
     if handle_load_post in bpy.app.handlers.load_post:
-        logging.debug("- Removing handler: load_post")
+        logging.debug("Removing handler: load_post")
         bpy.app.handlers.load_post.remove(handle_load_post)
     if handle_depsgraph_update_post in bpy.app.handlers.depsgraph_update_post:
-        logging.debug("- Removing handler: depsgraph_update_post")
+        logging.debug("Removing handler: depsgraph_update_post")
         bpy.app.handlers.depsgraph_update_post.remove(handle_depsgraph_update_post)
 
 @persistent
@@ -156,14 +156,14 @@ def handle_depsgraph_update_post(scene):
     logging.debug("Event handler: DEPSGRAPH_UPDATE_POST")
     if bpy.context.scene != tracked_scene:
         try:
-            logging.debug(f"- {len(tracked_scene.lightdesk.channels)}")
+            logging.debug(f"%%%%% {len(tracked_scene.lightdesk.channels)} channels in {tracked_scene.name}")
+            delete_scene_panels()
         except ReferenceError:
             logging.error("Invalid reference: tracked_scene")
-            track_scene()
         finally:
-            delete_scene_panels()
             track_scene()
             create_scene_panels()
+            logging.debug(f"%%%%% {len(tracked_scene.lightdesk.channels)} channels in {tracked_scene.name}")
     if len(bpy.context.scene.objects) != len(tracked_scene.objects):
         collate_scene_lights()
         filter_lights()
@@ -203,8 +203,8 @@ def debug_data():
     try:
         lightdesk = bpy.context.scene.lightdesk
         logging.debug("--------------------------------------------------")
-        logging.debug(f"tracked_scene: {tracked_scene.name} {len(tracked_scene.objects)}")
-        logging.debug(f"context.scene: {bpy.context.scene.name} {len(bpy.context.scene.objects)}")
+        logging.debug(f"Tracked scene: {tracked_scene.name}, {len(tracked_scene.objects)} objects")
+        logging.debug(f"Context scene: {bpy.context.scene.name}, {len(bpy.context.scene.objects)} objects")
         logging.debug(f"{len(lightdesk.lights)} Scene lights:")
         logging.debug(f"- {lightdesk.lights.keys()}")
         logging.debug(f"Light filters:")
@@ -214,7 +214,7 @@ def debug_data():
         logging.debug(f"- SUN : {lightdesk.list_sun}")
         logging.debug(f"{len(lightdesk.filtered)} Filtered lights:")
         logging.debug(f"- {lightdesk.filtered.keys()}")
-        logging.debug(f"- {lightdesk.selected_name} ({lightdesk.selected_index}) selected")
+        logging.debug(f"- Selected {lightdesk.selected_index}, {lightdesk.selected_name}")
         logging.debug(f"{len(lightdesk.channels)} Channels:")
         if len(lightdesk.channels):
             for channel in bpy.context.scene.lightdesk.channels:
@@ -555,28 +555,32 @@ class LIGHTDESK_PT_channel(Panel):
     bl_options = {'HEADER_LAYOUT_EXPAND'}
     bl_label = ""
 
+
     def draw_header(self, context):
-        global ui_condensed
-        lightdesk = bpy.context.scene.lightdesk
-        layout = self.layout
-        row = layout.row()
-        split = row.split(factor = 0.85)
-        split.label(text = lightdesk.channels[self.bl_idname].object.name)
-        op = split.operator("lightdesk.delete_channel", icon = 'X', text = "", emboss = False)
-        split = split.split()
-        op.channel_name = str(self.bl_idname)
+        global tracked_scene
+        if bpy.context.scene == tracked_scene:
+            lightdesk = bpy.context.scene.lightdesk
+            layout = self.layout
+            row = layout.row()
+            split = row.split(factor = 0.85)
+            split.label(text = lightdesk.channels[self.bl_idname].object.name)
+            op = split.operator("lightdesk.delete_channel", icon = 'X', text = "", emboss = False)
+            split = split.split()
+            op.channel_name = str(self.bl_idname)
 
     def draw(self, context):
-        lightdesk = context.scene.lightdesk
-        layout = self.layout
-        row = layout.row()
-        split = row.split(factor = 0.25, align = True)
-        split.prop(lightdesk.channels[self.bl_idname].object, "hide_viewport", icon_only = True, emboss = False)
-        split.prop(lightdesk.channels[self.bl_idname].object, "hide_render", icon_only = True, emboss = False)
-        split = row.split(factor = 0.85)
-        split.prop(lightdesk.channels[self.bl_idname].object.data, "energy", text = "")
-        split = split.split()
-        split.prop(lightdesk.channels[self.bl_idname].object.data, "color", text = "")
+        global tracked_scene
+        if bpy.context.scene == tracked_scene:
+            lightdesk = context.scene.lightdesk
+            layout = self.layout
+            row = layout.row()
+            split = row.split(factor = 0.25, align = True)
+            split.prop(lightdesk.channels[self.bl_idname].object, "hide_viewport", icon_only = True, emboss = False)
+            split.prop(lightdesk.channels[self.bl_idname].object, "hide_render", icon_only = True, emboss = False)
+            split = row.split(factor = 0.85)
+            split.prop(lightdesk.channels[self.bl_idname].object.data, "energy", text = "")
+            split = split.split()
+            split.prop(lightdesk.channels[self.bl_idname].object.data, "color", text = "")
 
 #===============================================================================
 # Properties
@@ -628,13 +632,13 @@ def register():
         logging.debug(f"- {cls}")
         register_class(cls)
     bpy.types.Scene.lightdesk = PointerProperty(type = LIGHTDESK_PG_properties)
-    start_all_the_things()
+    startup()
     logging.debug("Energise!")
     logging.debug("")
 
 def unregister():
     logging.debug("Lightdesk deactivated")
-    stop_all_the_stuff()
+    shutdown()
     logging.debug(f"Unregistering {len(classes)} classes:")
     for cls in reversed(classes):
         logging.debug(f"- {cls}")
