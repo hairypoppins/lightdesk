@@ -139,9 +139,7 @@ def load_post(scene):
 def depsgraph_update_post(scene):
     logging.debug(f"depsgraph_update_post {scene}")
     if scene_changed():
-        track_scene()
-        deadhead_panels()
-        deadhead_channels()
+        rebuild_ui()
     elif len(bpy.context.scene.objects) != len(tracked_scene.objects):
         get_lights()
         filter_lights()
@@ -159,25 +157,24 @@ def exec_queued():
 
 def debug_data():
     global tracked_scene
-    logging.debug("--------------------")
+    logging.debug("----------------------------------------")
     logging.debug(f"Current scene: {tracked_scene.name}")
     ui_props = bpy.context.window_manager.lightdesk
     logging.debug(f"{len(ui_props.panels)} panels:")
     if len(ui_props.panels):
         for panel in ui_props.panels:
             logging.debug(f"- {panel.name}")
-    logging.debug("--------------------")
     for scene in bpy.data.scenes:
         scene_props = scene.lightdesk
-        logging.debug(f"{scene.name} ..........")
+        logging.debug(f".......... {scene.name} ..........")
         logging.debug(f"Lights: {scene_props.lights.keys()}")
         logging.debug(f"Filtered: {scene_props.filtered.keys()}")
-        logging.debug(f"Selected: {scene_props.selected}, {scene_props.filtered[scene_props.selected].name}")
+        logging.debug(f"Selected: {scene_props.selected}")
         logging.debug(f"{len(scene_props.channels)} channels:")
         if len(scene_props.channels):
             for channel in scene_props.channels:
                 logging.debug(f"- {channel.name}, {channel.object.name}")
-    logging.debug("--------------------")
+    logging.debug("----------------------------------------")
 
 
 # Tracking ---------------------------------------------------------------------
@@ -372,7 +369,7 @@ def fill_panels():
     logging.debug("fill_panels")
     panels = bpy.context.window_manager.lightdesk.panels
     for panel in panels:
-        add_panel(panel.name)
+        register_panel(panel.name)
 
 def purge_panels():
     logging.debug("purge_panels")
@@ -406,6 +403,7 @@ def rebuild_ui():
         panel.name = channel.name
     fill_panels()
     track_scene()
+    debug_data()
 
 # Operators ====================================================================
 
@@ -419,7 +417,7 @@ class LIGHTDESK_OT_debug_data(Operator):
         return bool(context.scene.lightdesk)
 
     def execute(self, context):
-        logging.debug(f"Operator: {self}")
+        logging.debug(f"***** OPERATOR {self}")
         debug_data()
         return{'FINISHED'}
 
@@ -433,7 +431,7 @@ class LIGHTDESK_OT_get_lights(Operator):
         return bool(context.scene.lightdesk)
 
     def execute(self, context):
-        logging.debug(f"Operator: {self}")
+        logging.debug(f"***** OPERATOR {self}")
         get_lights()
         filter_lights()
         return{'FINISHED'}
@@ -448,7 +446,7 @@ class LIGHTDESK_OT_add_light(Operator):
         return context.scene.lightdesk.selected > -1
 
     def execute(self, context):
-        logging.debug(f"Operator: {self}")
+        logging.debug(f"***** OPERATOR {self}")
         lightdesk = context.scene.lightdesk
         add_light(lightdesk.filtered[lightdesk.selected].object)
         return {'FINISHED'}
@@ -463,7 +461,7 @@ class LIGHTDESK_OT_add_all_lights(Operator):
         return bool(context.scene.lightdesk and len(context.scene.lightdesk.filtered))
 
     def execute(self, context):
-        logging.debug(f"Operator: {self}")
+        logging.debug(f"***** OPERATOR {self}")
         add_all_lights()
         return {'FINISHED'}
 
@@ -479,7 +477,7 @@ class LIGHTDESK_OT_delete_channel(Operator):
         return bool(context.scene.lightdesk)
 
     def execute(self, context):
-        logging.debug(f"Operator: {self}")
+        logging.debug(f"***** OPERATOR {self}")
         delete_channel(self.channel)
         return {'FINISHED'}
 
@@ -493,7 +491,7 @@ class LIGHTDESK_OT_delete_all_channels(Operator):
         return bool(context.scene.lightdesk and len(context.scene.lightdesk.channels))
 
     def execute(self, context):
-        logging.debug(f"Operator: {self}")
+        logging.debug(f"***** OPERATOR {self}")
         delete_all_channels()
         return {'FINISHED'}
 
@@ -548,8 +546,7 @@ class LIGHTDESK_PT_channel(Panel):
 
     @classmethod
     def poll(cls, context):
-        global tracked_scene
-        return bpy.context.scene == tracked_scene
+        return not scene_changed()
 
     def draw_header(self, context):
         lightdesk = bpy.context.scene.lightdesk
