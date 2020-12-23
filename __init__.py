@@ -173,16 +173,19 @@ def scene_changed():
 
 def debug_data():
     global tracked_scene
-    scene = bpy.context.scene.lightdesk
-    ui = bpy.context.window_manager.lightdesk
-    logging.debug(f"{tracked_scene.name}: {scene.filtered.keys()}, {scene.selected}")
-    if len(scene.channels):
-        logging.debug(f"{len(scene.channels)} channels:")
-        for channel in scene.channels:
+    scene_props = bpy.context.scene.lightdesk
+    ui_props = bpy.context.window_manager.lightdesk
+    logging.debug(f"Scene: {tracked_scene.name}")
+    logging.debug(f"Lights: {scene_props.lights.keys()}")
+    logging.debug(f"Filtered: {scene_props.filtered.keys()}")
+    logging.debug(f"Selected: {scene_props.selected}, {scene_props.filtered[scene_props.selected].name}")
+    logging.debug(f"{len(scene_props.channels)} channels:")
+    if len(scene_props.channels):
+        for channel in scene_props.channels:
             logging.debug(f"- {channel.name}, {channel.object.name}")
-    if len(ui.panels):
-        logging.debug(f"{len(ui.panels)} panels:")
-        for panel in ui.panels:
+    logging.debug(f"{len(ui_props.panels)} panels:")
+    if len(ui_props.panels):
+        for panel in ui_props.panels:
             logging.debug(f"- {panel.name}")
 
 # Lights -----------------------------------------------------------------------
@@ -220,14 +223,10 @@ def update_filters(self, context):
     logging.debug("update_filters")
     lightdesk = bpy.context.scene.lightdesk
     if lightdesk.selected >= 0:
-        old_selection = lightdesk.lights[lightdesk.selected].name
+        current_selection = lightdesk.filtered[lightdesk.selected].name
     filter_lights()
     if lightdesk.selected >= 0:
-        new_selection = lightdesk.filtered[lightdesk.selected].name
-        if new_selection == old_selection:
-            lightdesk.selected = get_light_index(lightdesk.lights[lightdesk.selected].name)
-        else:
-            lightdesk.selected = -1
+        lightdesk.selected = get_light_index(current_selection)
 
 def collect_light(object, collection):
     logging.debug(f"collect_light {object.name} {collection}")
