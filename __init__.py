@@ -65,7 +65,7 @@ tracked_scene = object()
 def startup():
     logging.debug("startup")
     try:
-        append_exec_queue(get_lights)
+        append_exec_queue(update_lights)
         append_exec_queue(filter_lights)
         append_exec_queue(track_scene)
         append_exec_queue(deadhead_panels)
@@ -133,16 +133,21 @@ def load_pre(scene):
 def load_post(scene):
     logging.debug(f"load_post {scene}")
     track_scene()
-    fill_panels()
+    push_panels()
 
 @persistent
 def depsgraph_update_post(scene):
     logging.debug(f"depsgraph_update_post {scene}")
+    lightdesk = bpy.context.scene.lightdesk
+    if len(bpy.context.scene.objects) != lightdesk.objects:
+        logging.debug(f"%%% somethig changed {lightdesk.objects}, {len(bpy.context.scene.objects)}")
+        debug_data()
+        deadhead_panels()
+        update_lights()
+        update_list()
+        lightdesk.objects = len(bpy.context.scene.objects)
     if scene_changed():
         rebuild_ui()
-    elif len(bpy.context.scene.objects) != len(tracked_scene.objects):
-        get_lights()
-        filter_lights()
 
 def append_exec_queue(function):
     logging.debug(f"append_exec_queue {function}")
@@ -197,8 +202,8 @@ def scene_changed():
 
 # Lights -----------------------------------------------------------------------
 
-def get_lights():
-    logging.debug("get_lights")
+def update_lights():
+    logging.debug("update_lights")
     lightdesk = bpy.context.scene.lightdesk
     lightdesk.lights.clear()
     lights = [object for object in bpy.context.scene.objects if object.type == 'LIGHT']
@@ -226,14 +231,21 @@ def filter_lights():
             if lightdesk.list_sun:
                 collect_light(light.object, lightdesk.filtered)
 
-def update_filters(self, context):
-    logging.debug("update_filters")
+def update_list():
     lightdesk = bpy.context.scene.lightdesk
     if lightdesk.selected >= 0:
-        current_selection = lightdesk.filtered[lightdesk.selected].name
+        if lightdesk.selected < len(lightdesk.filtered):
+            current_selection = lightdesk.filtered[lightdesk.selected].name
+        else:
+            lightdesk.selected = -1
     filter_lights()
     if lightdesk.selected >= 0:
         lightdesk.selected = get_light_index(current_selection)
+
+def update_filters(self, context):
+    logging.debug("update_filters")
+    filter_lights()
+    update_list()
 
 def collect_light(object, collection):
     logging.debug(f"collect_light {object.name} {collection}")
@@ -289,7 +301,7 @@ def create_channel(light):
     if not get_channel(light):
         id = get_panel_id()
         add_channel(id, light)
-        add_panel(id)
+        add_panel(id, light)
 
 def pop_channel(id):
     logging.debug(f"pop_channel {id}")
@@ -349,12 +361,13 @@ def unregister_panel(id):
     else:
         unregister_class(cls)
 
-def add_panel(id):
-    logging.debug(f"add_panel {id}")
+def add_panel(id, light):
+    logging.debug(f"add_panel {id} {light}")
     panels = bpy.context.window_manager.lightdesk.panels
     if get_panel_index(id) < 0:
         panel = panels.add()
         panel.name = id
+        panel.object = light
         register_panel(id)
 
 def pop_panel(id):
@@ -365,8 +378,8 @@ def pop_panel(id):
         unregister_panel(id)
         panels.remove(index)
 
-def fill_panels():
-    logging.debug("fill_panels")
+def push_panels():
+    logging.debug("push_panels")
     panels = bpy.context.window_manager.lightdesk.panels
     for panel in panels:
         register_panel(panel.name)
@@ -385,6 +398,7 @@ def deadhead_panels():
             try:
                 class_path = f"bpy.types.{panel.name}"
                 cls = eval(class_path)
+                print(panel.object.name)
             except Exception as e:
                 logging.debug(e)
                 pop_panel(panel.name)
@@ -401,9 +415,8 @@ def rebuild_ui():
     for channel in channels:
         panel = panels.add()
         panel.name = channel.name
-    fill_panels()
+    push_panels()
     track_scene()
-    debug_data()
 
 # Operators ====================================================================
 
@@ -421,8 +434,8 @@ class LIGHTDESK_OT_debug_data(Operator):
         debug_data()
         return{'FINISHED'}
 
-class LIGHTDESK_OT_get_lights(Operator):
-    bl_idname = "lightdesk.get_lights"
+class LIGHTDESK_OT_update_lights(Operator):
+    bl_idname = "lightdesk.update_lights"
     bl_label = "Get lights in scene"
     bl_options = {'INTERNAL'}
 
@@ -432,7 +445,7 @@ class LIGHTDESK_OT_get_lights(Operator):
 
     def execute(self, context):
         logging.debug(f"***** OPERATOR {self}")
-        get_lights()
+        update_lights()
         filter_lights()
         return{'FINISHED'}
 
@@ -521,7 +534,7 @@ class LIGHTDESK_PT_lights(Panel):
         layout = self.layout
         if logging.getLevelName(logging.root.level) == 'DEBUG':
             row = layout.row()
-            row.operator("lightdesk.get_lights", text="Refresh")
+            row.operator("lightdesk.update_lights", text="Refresh")
             row.operator("lightdesk.debug_data", text="Debug")
         row = layout.row(align = True)
         row.prop(lightdesk, "list_area", toggle = True, text = "Area" )
@@ -533,7 +546,7 @@ class LIGHTDESK_PT_lights(Panel):
         row = layout.row()
         row.operator("lightdesk.add_light", text="Add")
         row.operator("lightdesk.add_all_lights", text="Add All")
-        row.operator("lightdesk.delete_all_channels", text="Delete All")
+        row.operator("lightdesk.delete_all_channels", text="Reset")
 
 class LIGHTDESK_PT_channel(Panel):
     bl_space_type = 'VIEW_3D'
@@ -554,7 +567,7 @@ class LIGHTDESK_PT_channel(Panel):
         row = layout.row()
         split = row.split(factor = 0.85)
         split.label(text = lightdesk.channels[self.bl_idname].object.name)
-        op = split.operator("lightdesk.delete_channel", icon = 'X', text = "", emboss = False)
+        op = split.operator("lightdesk.delete_channel", icon = 'PANEL_CLOSE', text = "", emboss = False)
         split = split.split()
         op.channel = str(self.bl_idname)
 
@@ -584,6 +597,7 @@ class LIGHTDESK_PG_scene(PropertyGroup):
     lights : CollectionProperty(type = LIGHTDESK_PG_object)
     filtered : CollectionProperty(type = LIGHTDESK_PG_object)
     selected : IntProperty(default = -1)
+    objects : IntProperty(default = -1)
     channels : CollectionProperty(type = LIGHTDESK_PG_object)
 
 class LIGHTDESK_PG_ui(PropertyGroup):
@@ -594,7 +608,7 @@ class LIGHTDESK_PG_ui(PropertyGroup):
 
 classes = [
             LIGHTDESK_OT_debug_data,
-            LIGHTDESK_OT_get_lights,
+            LIGHTDESK_OT_update_lights,
             LIGHTDESK_OT_add_light,
             LIGHTDESK_OT_add_all_lights,
             LIGHTDESK_OT_delete_channel,
