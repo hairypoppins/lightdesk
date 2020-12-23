@@ -157,6 +157,29 @@ def exec_queued():
         function()
     return 1.0
 
+def debug_data():
+    global tracked_scene
+    logging.debug("--------------------")
+    logging.debug(f"Current scene: {tracked_scene.name}")
+    ui_props = bpy.context.window_manager.lightdesk
+    logging.debug(f"{len(ui_props.panels)} panels:")
+    if len(ui_props.panels):
+        for panel in ui_props.panels:
+            logging.debug(f"- {panel.name}")
+    logging.debug("--------------------")
+    for scene in bpy.data.scenes:
+        scene_props = scene.lightdesk
+        logging.debug(f"{scene.name} ..........")
+        logging.debug(f"Lights: {scene_props.lights.keys()}")
+        logging.debug(f"Filtered: {scene_props.filtered.keys()}")
+        logging.debug(f"Selected: {scene_props.selected}, {scene_props.filtered[scene_props.selected].name}")
+        logging.debug(f"{len(scene_props.channels)} channels:")
+        if len(scene_props.channels):
+            for channel in scene_props.channels:
+                logging.debug(f"- {channel.name}, {channel.object.name}")
+    logging.debug("--------------------")
+
+
 # Tracking ---------------------------------------------------------------------
 
 def track_scene():
@@ -174,25 +197,6 @@ def scene_changed():
     if changed:
         logging.debug(f"scene_changed")
     return changed
-
-def debug_data():
-    global tracked_scene
-    scene_props = bpy.context.scene.lightdesk
-    ui_props = bpy.context.window_manager.lightdesk
-    logging.debug("....................")
-    logging.debug(f"Scene: {tracked_scene.name}")
-    logging.debug(f"Lights: {scene_props.lights.keys()}")
-    logging.debug(f"Filtered: {scene_props.filtered.keys()}")
-    logging.debug(f"Selected: {scene_props.selected}, {scene_props.filtered[scene_props.selected].name}")
-    logging.debug(f"{len(scene_props.channels)} channels:")
-    if len(scene_props.channels):
-        for channel in scene_props.channels:
-            logging.debug(f"- {channel.name}, {channel.object.name}")
-    logging.debug(f"{len(ui_props.panels)} panels:")
-    if len(ui_props.panels):
-        for panel in ui_props.panels:
-            logging.debug(f"- {panel.name}")
-    logging.debug("....................")
 
 # Lights -----------------------------------------------------------------------
 
@@ -376,16 +380,6 @@ def purge_panels():
     for panel in reversed(panels):
         pop_panel(panel.name)
 
-def rebuild_ui():
-    logging.debug("rebuild_ui")
-    purge_panels()
-    panels = bpy.context.window_manager.lightdesk.panels
-    channels = bpy.context.scene.lightdesk.channels
-    for channel in channels:
-        panel = panels.add()
-        panel.name = channel.name
-    fill_panels()
-
 def deadhead_panels():
     logging.debug("deadhead_panels")
     panels = bpy.context.window_manager.lightdesk.panels
@@ -401,6 +395,17 @@ def deadhead_panels():
         else:
             pop_panel(panel.name)
             pop_channel(panel.name)
+
+def rebuild_ui():
+    logging.debug("rebuild_ui")
+    purge_panels()
+    panels = bpy.context.window_manager.lightdesk.panels
+    channels = bpy.context.scene.lightdesk.channels
+    for channel in channels:
+        panel = panels.add()
+        panel.name = channel.name
+    fill_panels()
+    track_scene()
 
 # Operators ====================================================================
 
@@ -510,7 +515,6 @@ class LIGHTDESK_PT_lights(Panel):
     @classmethod
     def poll(cls, context):
         if scene_changed() and not bpy.app.timers.is_registered(rebuild_ui):
-            logging.debug("**********")
             bpy.app.timers.register(rebuild_ui)
         return bpy.context.scene.lightdesk
 
