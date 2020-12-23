@@ -72,15 +72,15 @@ def startup():
         add_handlers()
         add_timers()
     except Exception as e:
-        logging.error("Aborting")
+        logging.error(e)
         shutdown()
 
 def shutdown():
     logging.debug("shutdown")
     try:
+        purge_panels()
         remove_timers()
         remove_handlers()
-        kill_all_panels()
     except Exception as e:
         logging.error(e)
 
@@ -123,7 +123,7 @@ def load_pre(scene):
     logging.debug(f"load_pre {scene}")
     try:
         lightdesk = bpy.context.scene.lightdesk
-        kill_all_panels()
+        purge_panels()
     except Exception as e:
         pass
 
@@ -131,7 +131,7 @@ def load_pre(scene):
 def load_post(scene):
     logging.debug(f"load_post {scene}")
     track_scene()
-    build_all_panels()
+    fill_panels()
 
 @persistent
 def depsgraph_update_post(scene):
@@ -195,6 +195,9 @@ def get_lights():
     for light in lights:
         collect_light(light, lightdesk.lights)
 
+def get_light_index(id):
+    return bpy.context.scene.lightdesk.filtered.find(id)
+
 def filter_lights():
     logging.debug("filter_lights")
     lightdesk = bpy.context.scene.lightdesk
@@ -214,7 +217,17 @@ def filter_lights():
                 collect_light(light.object, lightdesk.filtered)
 
 def update_filters(self, context):
+    logging.debug("update_filters")
+    lightdesk = bpy.context.scene.lightdesk
+    if lightdesk.selected >= 0:
+        old_selection = lightdesk.lights[lightdesk.selected].name
     filter_lights()
+    if lightdesk.selected >= 0:
+        new_selection = lightdesk.filtered[lightdesk.selected].name
+        if new_selection == old_selection:
+            lightdesk.selected = get_light_index(lightdesk.lights[lightdesk.selected].name)
+        else:
+            lightdesk.selected = -1
 
 def collect_light(object, collection):
     logging.debug(f"collect_light {object.name} {collection}")
@@ -225,11 +238,11 @@ def collect_light(object, collection):
 def get_selected_light():
     logging.debug("get_scelected_light")
     lightdesk = bpy.context.scene.lightdesk
-    return lightdesk.filtered[lightdesk.selected]
+    return lightdesk.filtered[lightdesk.selected].object
 
 def add_light(light):
     logging.debug(f"add_light {light}")
-    if not channel_exists(light):
+    if not get_channel(light):
         create_channel(light)
 
 def add_selected_light():
@@ -343,27 +356,27 @@ def remove_panel(id):
         unregister_panel(id)
         panels.remove(index)
 
-def build_all_panels():
-    logging.debug("build_all_panels")
+def fill_panels():
+    logging.debug("fill_panels")
     panels = bpy.context.window_manager.lightdesk.panels
     for panel in panels:
         add_panel(panel.name)
 
-def kill_all_panels():
-    logging.debug("kill_all_panels")
+def purge_panels():
+    logging.debug("purge_panels")
     panels = bpy.context.window_manager.lightdesk.panels
     for panel in reversed(panels):
         remove_panel(panel.name)
 
 def rebuild_ui():
     logging.debug("rebuild_ui")
-    kill_all_panels()
+    purge_panels()
     panels = bpy.context.window_manager.lightdesk.panels
     channels = bpy.context.scene.lightdesk.channels
     for channel in channels:
         panel = panels.add()
         panel.name = channel.name
-    build_all_panels()
+    fill_panels()
 
 # Operators ====================================================================
 
@@ -408,7 +421,7 @@ class LIGHTDESK_OT_add_light(Operator):
     def execute(self, context):
         logging.debug("")
         lightdesk = context.scene.lightdesk
-        add_light(lightdesk.filtered[lightdesk.selected])
+        add_light(lightdesk.filtered[lightdesk.selected].object)
         return {'FINISHED'}
 
 class LIGHTDESK_OT_add_all_lights(Operator):
@@ -472,7 +485,7 @@ class LIGHTDESK_PT_lights(Panel):
 
     @classmethod
     def poll(cls, context):
-        if scene_changed():
+        if scene_changed() and not bpy.app.timers.is_registered(rebuild_ui):
             bpy.app.timers.register(rebuild_ui)
         return bpy.context.scene.lightdesk
 
