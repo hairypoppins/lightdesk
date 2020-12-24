@@ -55,15 +55,14 @@ import logging
 import queue
 
 logging.basicConfig(level = logging.ERROR)
-
 light_types = ['AREA', 'POINT', 'SPOT', 'SUN']
 exec_queue = queue.SimpleQueue()
 tracked_scene = object()
 
 # Core -------------------------------------------------------------------------
 
-def startup():
-    logging.debug("startup")
+def activate():
+    logging.debug("activate")
     try:
         append_exec_queue(update_lights)
         append_exec_queue(update_filtered)
@@ -71,30 +70,30 @@ def startup():
         append_exec_queue(deadhead_panels)
         append_exec_queue(deadhead_channels)
         append_exec_queue(rebuild_ui)
+        add_timer(exec_queued)
         add_handlers()
-        add_timers()
     except Exception as e:
         logging.error(e)
-        shutdown()
+        deactivate()
 
-def shutdown():
-    logging.debug("shutdown")
+def deactivate():
+    logging.debug("deactivate")
     try:
         purge_panels()
-        remove_timers()
+        remove_timer(exec_queued)
         remove_handlers()
     except Exception as e:
         logging.error(e)
 
-def add_timers():
-    if not bpy.app.timers.is_registered(exec_queued):
-        logging.debug("add_timers")
-        bpy.app.timers.register(exec_queued)
+def add_timer(function):
+    logging.debug(f"add_timer {function}")
+    if not bpy.app.timers.is_registered(function):
+        bpy.app.timers.register(function)
 
-def remove_timers():
-    if bpy.app.timers.is_registered(exec_queued):
-        logging.debug("remove_timers")
-        bpy.app.timers.unregister(exec_queued)
+def remove_timer(function):
+    logging.debug(f"remove_timer {function}")
+    if bpy.app.timers.is_registered(function):
+        bpy.app.timers.unregister(function)
 
 def add_handlers():
     logging.debug("add_handlers")
@@ -122,24 +121,20 @@ def remove_handlers():
 
 @persistent
 def load_pre(scene):
-    logging.debug(f"load_pre {scene}")
-    try:
-        lightdesk = bpy.context.scene.lightdesk
-        purge_panels()
-    except Exception as e:
-        pass
+    logging.debug(f"load_pre {scene.name}")
+    purge_panels()
 
 @persistent
 def load_post(scene):
-    logging.debug(f"load_post {scene}")
+    logging.debug(f"load_post {scene.name}")
     track_scene()
     rebuild_panels()
 
 @persistent
 def depsgraph_update_post(scene):
-    logging.debug(f"depsgraph_update_post {scene}")
+    logging.debug(f"depsgraph_update_post {scene.name}")
     refresh_lights_on_update()
-    rebuild_on_scene_change()
+    rebuild_ui_on_scene_change()
 
 def append_exec_queue(function):
     logging.debug(f"append_exec_queue {function}")
@@ -163,10 +158,9 @@ def debug_data():
             logging.debug(f"- {panel.name}")
     for scene in bpy.data.scenes:
         scene_props = scene.lightdesk
-        logging.debug(f".......... {scene.name} ..........")
+        logging.debug(f"..... {scene.name} .....")
         logging.debug(f"Lights: {scene_props.lights.keys()}")
-        logging.debug(f"Filtered: {scene_props.filtered.keys()}")
-        logging.debug(f"Selected: {scene_props.selected}")
+        logging.debug(f"Filtered: {scene_props.filtered.keys()}, {scene_props.selected}")
         logging.debug(f"{len(scene_props.channels)} channels:")
         if len(scene_props.channels):
             for channel in scene_props.channels:
@@ -187,26 +181,23 @@ def has_scene_changed():
         changed = tracked_scene != bpy.context.scene
     except InvalidReference:
         changed = True
-    if changed:
-        logging.debug(f"has_scene_changed")
     return changed
 
-def have_objects_changed():
+def has_objects_changed():
     return len(bpy.context.scene.objects) != bpy.context.scene.lightdesk.objects
 
 # Lights -----------------------------------------------------------------------
 
-def is_context_object_light():
+def is_object_light():
     is_light = False
     if bpy.context.object:
         is_light = bpy.context.object.type == 'LIGHT'
     return is_light
 
 def refresh_lights_on_update():
-    if is_context_object_light() or have_objects_changed():
+    if is_object_light() or has_objects_changed():
         refresh_lights()
-        if not bpy.app.timers.is_registered(deadhead_channels):
-            bpy.app.timers.register(deadhead_channels)
+        add_timer(deadhead_channels)
         bpy.context.scene.lightdesk.objects = len(bpy.context.scene.objects)
 
 def does_light_exist(light_name):
@@ -351,7 +342,7 @@ def deadhead_channels():
 
 # Panels -----------------------------------------------------------------------
 
-def rebuild_on_scene_change():
+def rebuild_ui_on_scene_change():
     if has_scene_changed():
         rebuild_ui()
 
@@ -553,8 +544,8 @@ class LIGHTDESK_PT_lights(Panel):
 
     @classmethod
     def poll(cls, context):
-        if has_scene_changed() and not bpy.app.timers.is_registered(rebuild_ui):
-            bpy.app.timers.register(rebuild_ui)
+        if has_scene_changed():
+            add_timer(rebuild_ui)
         return bpy.context.scene.lightdesk
 
     def draw(self, context):
@@ -654,11 +645,11 @@ def register():
         register_class(cls)
     bpy.types.Scene.lightdesk = PointerProperty(type = LIGHTDESK_PG_scene)
     bpy.types.WindowManager.lightdesk = PointerProperty(type = LIGHTDESK_PG_ui)
-    startup()
+    activate()
 
 def unregister():
     logging.debug("unregister")
-    shutdown()
+    deactivate()
     for cls in reversed(classes):
         unregister_class(cls)
     del bpy.types.Scene.lightdesk
