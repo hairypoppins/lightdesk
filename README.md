@@ -20,11 +20,12 @@ Select the Lightdesk tab in the sidebar of the 3D view to display the Scene Ligh
 This lists all of the light objects in the current scene. The toggle buttons above may be used to filter the list by light type. Standard filter and sort by name options are available from the drop-down section at the foot of the list.
 
 Lights are assigned to channels, with channels exposing controls to adjust the associated light's properties.
+
 * Select a light in the Scene Lights list and click the Add button to create a new lighting channel and assign the selected light to it. This option is disabled if the currently selected light has already been assigned to a channel.
 * Click Fill to quickly create channels for all the lights currently displayed in the lights list. Only lights that are not currently assigned to a channel will be added.
 * Click Purge to immediately remove all current channels. Channels can also be removed individually by clicking the Delete button in each channel header.
 
-![Channels](channels.png)
+![Channels](channels.png)![Ordering](ordering.png)
 
 By default, channels appear below Scene Lights, but all panels can be drag-dropped to reorder and collapsed when additional screen space is required.
 
@@ -41,8 +42,7 @@ The light controls within each channel are, from left to right:
 
 These controls merely expose the underlying light properties and all are animatable from within Lightdesk thanks to Blender's RNA system.
 
-Lightdesk channels and settings are configured per scene and are saved with the `.blend` file, so your channel setup will be recreated next time your project is loaded. Note that, at present, Lightdesk cannot preserve custom ordering of channels between file loads or scene switches and instead will recreate channels in the order that they were originally added.
-
+Lightdesk channels and settings are configured per scene and are saved with the `.blend` file, so your channel setup will be recreated next time your project is loaded.
 
 ## Known Issues
 1. The re-ordering of panels is not currently tracked or persisted in the scene data or the `.blend file`. The next time your project is loaded the channels will be recreated in the order that they were originally assigned to Lightdesk, not the display order they were in when the `.blend` file was saved.
