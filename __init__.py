@@ -21,7 +21,7 @@ bl_info = {
     "description": "Control multiple scene lights from a Lightdesk panel in the 3D view",
     "author": "Quentin Walker",
     "blender": (2, 80, 0),
-    "version": (0, 2, 3),
+    "version": (1, 0, 0),
     "category": "Lighting",
     "location": "View3D > Sidebar > Lightdesk",
     "warning": "",
