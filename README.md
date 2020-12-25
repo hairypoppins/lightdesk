@@ -25,7 +25,7 @@ Lights are assigned to channels, with channels exposing controls to adjust the a
 * Click Fill to quickly create channels for all the lights currently displayed in the lights list. Only lights that are not currently assigned to a channel will be added.
 * Click Purge to immediately remove all current channels. Channels can also be removed individually by clicking the Delete button in each channel header.
 
-![Channels](channels.png)![Ordering](ordering.png)
+![Channels](channels.png)!
 
 By default, channels appear below Scene Lights, but all panels can be drag-dropped to reorder and collapsed when additional screen space is required.
 
