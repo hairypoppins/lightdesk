@@ -19,10 +19,12 @@ Select the Lightdesk tab in the sidebar of the 3D view to display the Scene Ligh
 
 This lists all of the light objects in the current scene. The toggle buttons above may be used to filter the list by light type. Standard filter and sort by name options are available from the drop-down section at the foot of the list.
 
-Lights are assigned to channels, with channels exposing controls to adjust the associated light's properties. 
+Lights are assigned to channels, with channels exposing controls to adjust the associated light's properties.
 
 **Add** - Select a light in the Scene Lights list and click Add to create a new lighting channel and assign the selected light to it. This option is disabled if the currently selected light has already been assigned to a channel.
+
 **Fill** - Quickly create channels for all the lights currently displayed in the lights list. Only lights that are not currently assigned to a channel will be added.
+
 **Purge** - Immediately remove all current channels. Channels can also be removed individually by clicking the Delete button in each channel header.
 
 ![Channels](channels.png)!
@@ -35,10 +37,10 @@ Each channel header contains the name of the associated light and a Delete butto
 
 The light controls within each channel are, from left to right:
 
-1. Toggle viewport visibility
-2. Toggle render visibility
-3. Light power
-4. Light color
+* Toggle viewport visibility
+* Toggle render visibility
+* Light power
+* Light color
 
 These controls merely expose the underlying light properties and all are animatable from within Lightdesk thanks to Blender's RNA system.
 
